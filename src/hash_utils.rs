@@ -16,7 +16,7 @@ pub fn hash<F: FF>(x: F, y: F) -> Result<F> {
     Ok(F::from_bytes(byt).with_context(|| format!("@{}:{}", file!(), line!()))?)
 }
 
-// H^F: F x F -> F
+// H^F: F -> F
 #[inline]
 pub fn hash_f<F: FF>(x: F) -> Result<F> {
     let mut hasher = Sha256::new();

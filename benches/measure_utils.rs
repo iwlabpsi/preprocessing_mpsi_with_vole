@@ -15,6 +15,9 @@ use criterion::{
 };
 */
 
+// You should use scuttlebutt::channel::TrackChannel to measure the traffic.
+// Unfortunately, I didn't notice its existence until I reinvented the wheel.
+
 #[derive(Debug)]
 pub(crate) struct TrafficBytes {
     trd: Option<thread::JoinHandle<usize>>,

@@ -428,6 +428,7 @@ where
 mod tests {
     use super::*;
     use crate::channel_utils::sync_channel::create_unix_channels;
+    use crate::channel_utils::sync_channel_by_cb::create_crossbeam_channels;
     use crate::channel_utils::tcp_channel::{
         create_tcp_channels_for_receiver, create_tcp_channels_for_sender,
     };
@@ -644,5 +645,41 @@ mod tests {
         let set_size = 1 << 20;
         let common_size = 1 << 5;
         test_protocol_mt_paxos_tcp_base(nparties, set_size, common_size, 20000);
+    }
+
+    fn test_protocol_mt_paxos_crossbeam_base(nparties: usize, set_size: usize, common_size: usize) {
+        // create channels
+        let (receiver_channels, channels) = create_crossbeam_channels::<10000>(nparties);
+        test_protocol_mt_base::<PaxosSolver<F128b>, _>(
+            nparties,
+            set_size,
+            common_size,
+            receiver_channels,
+            channels,
+        );
+    }
+
+    #[test]
+    fn test_protocol_mt_paxos_crossbeam_small() {
+        let nparties = 3;
+        let set_size = 10;
+        let common_size = 5;
+        test_protocol_mt_paxos_crossbeam_base(nparties, set_size, common_size);
+    }
+
+    #[test]
+    fn test_protocol_mt_paxos_crossbeam_middle() {
+        let nparties = 5;
+        let set_size = 1 << 10;
+        let common_size = 1 << 5;
+        test_protocol_mt_paxos_crossbeam_base(nparties, set_size, common_size);
+    }
+
+    #[test]
+    fn test_protocol_mt_paxos_crossbeam_large() {
+        let nparties = 5;
+        let set_size = 1 << 20;
+        let common_size = 1 << 5;
+        test_protocol_mt_paxos_crossbeam_base(nparties, set_size, common_size);
     }
 }

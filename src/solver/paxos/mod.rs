@@ -61,7 +61,8 @@ pub struct PaxosSolver<F: FF>(PhantomData<F>);
 // d = log n
 // |L| = m' = 2.01 * n
 // |R| = d + \lambda
-// 2-core based: m = (2.4n) + (d + \lambda)
+// 2-core based:
+// m = (2.4n) + (d + \lambda)
 // d = 1.01 * log n
 // |L| = m' = 2.4n
 // |R| = d + \lambda

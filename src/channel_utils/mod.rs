@@ -5,6 +5,7 @@ use std::sync::{Arc, Mutex};
 use typenum::marker_traits::Unsigned;
 
 pub mod sync_channel;
+pub mod sync_channel_by_cb;
 pub mod tcp_channel;
 
 pub fn write_vec_f<F, C>(channel: &mut C, v: &[F]) -> Result<usize>
