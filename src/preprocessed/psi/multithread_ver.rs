@@ -649,7 +649,7 @@ mod tests {
 
     fn test_protocol_mt_paxos_crossbeam_base(nparties: usize, set_size: usize, common_size: usize) {
         // create channels
-        let (receiver_channels, channels) = create_crossbeam_channels::<10000>(nparties);
+        let (receiver_channels, channels) = create_crossbeam_channels(nparties);
         test_protocol_mt_base::<PaxosSolver<F128b>, _>(
             nparties,
             set_size,

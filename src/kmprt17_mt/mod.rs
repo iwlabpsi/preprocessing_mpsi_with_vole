@@ -314,11 +314,21 @@ fn secret_sharing_of_zero<R: Rng>(nparties: usize, rng: &mut R) -> Vec<Block512>
 mod tests {
     use super::*;
     use crate::channel_utils::sync_channel::create_unix_channels;
+    use crate::channel_utils::sync_channel_by_cb::create_crossbeam_channels;
+    use crate::channel_utils::tcp_channel::{
+        create_tcp_channels_for_receiver, create_tcp_channels_for_sender,
+    };
     use crate::set_utils::create_sets_without_check;
     use scuttlebutt::{AesRng, Block};
     use std::collections::HashSet;
 
-    fn test_protocol_mt_base(nparties: usize, set_size: usize, common_size: usize) {
+    fn test_protocol_mt_base<C: AbstractChannel + Sync + Send + 'static>(
+        nparties: usize,
+        set_size: usize,
+        common_size: usize,
+        receiver_channels: Vec<(PartyId, C)>,
+        channels: Vec<Vec<(PartyId, C)>>,
+    ) {
         let mut rng = AesRng::new();
 
         let (intersection, mut sets): (Vec<Block>, Vec<Vec<Block>>) =
@@ -327,7 +337,7 @@ mod tests {
         println!("intersection prepared.");
 
         // create channels
-        let (receiver_channels, channels) = create_unix_channels(nparties).unwrap();
+        // let (receiver_channels, channels) = create_unix_channels(nparties).unwrap();
 
         let mut receiver_channels = receiver_channels
             .into_iter()
@@ -379,27 +389,105 @@ mod tests {
         assert_eq!(res, intersection);
     }
 
+    fn test_protocol_mt_base_unix(nparties: usize, set_size: usize, common_size: usize) {
+        let (receiver_channels, channels) = create_unix_channels(nparties).unwrap();
+        test_protocol_mt_base(nparties, set_size, common_size, receiver_channels, channels);
+    }
+
     #[test]
-    fn test_protocol_mt_vandelmonde_small() {
+    fn test_protocol_mt_unix_small() {
         let nparties = 3;
         let set_size = 10;
         let common_size = 5;
-        test_protocol_mt_base(nparties, set_size, common_size);
+        test_protocol_mt_base_unix(nparties, set_size, common_size);
     }
 
     #[test]
-    fn test_protocol_mt_paxos_middle() {
+    fn test_protocol_mt_unix_middle() {
         let nparties = 5;
         let set_size = 1 << 10;
         let common_size = 1 << 5;
-        test_protocol_mt_base(nparties, set_size, common_size);
+        test_protocol_mt_base_unix(nparties, set_size, common_size);
     }
 
     #[test]
-    fn test_protocol_mt_paxos_large() {
+    fn test_protocol_mt_unix_large() {
         let nparties = 5;
         let set_size = 1 << 20;
         let common_size = 1 << 5;
-        test_protocol_mt_base(nparties, set_size, common_size);
+        test_protocol_mt_base_unix(nparties, set_size, common_size);
+    }
+
+    fn test_protocol_mt_base_tcp(
+        nparties: usize,
+        set_size: usize,
+        common_size: usize,
+        base_port: usize,
+    ) {
+        // create channels
+        let handles = (1..nparties)
+            .map(|me| {
+                std::thread::spawn(move || create_tcp_channels_for_sender(nparties, base_port, me))
+            })
+            .collect::<Vec<_>>();
+        let receiver_channels = create_tcp_channels_for_receiver(nparties, base_port).unwrap();
+        let channels = handles
+            .into_iter()
+            .map(|h| h.join().unwrap().unwrap())
+            .collect::<Vec<_>>();
+        test_protocol_mt_base(nparties, set_size, common_size, receiver_channels, channels);
+    }
+
+    #[test]
+    fn test_protocol_mt_tcp_small() {
+        let nparties = 3;
+        let set_size = 10;
+        let common_size = 5;
+        test_protocol_mt_base_tcp(nparties, set_size, common_size, 10000);
+    }
+
+    #[test]
+    fn test_protocol_mt_tcp_middle() {
+        let nparties = 5;
+        let set_size = 1 << 10;
+        let common_size = 1 << 5;
+        test_protocol_mt_base_tcp(nparties, set_size, common_size, 15000);
+    }
+
+    #[test]
+    fn test_protocol_mt_tcp_large() {
+        let nparties = 5;
+        let set_size = 1 << 20;
+        let common_size = 1 << 5;
+        test_protocol_mt_base_tcp(nparties, set_size, common_size, 20000);
+    }
+
+    fn test_protocol_mt_base_crossbeam(nparties: usize, set_size: usize, common_size: usize) {
+        let (receiver_channels, channels) = create_crossbeam_channels(nparties);
+        test_protocol_mt_base(nparties, set_size, common_size, receiver_channels, channels);
+    }
+
+    #[test]
+    fn test_protocol_mt_crossbeam_small() {
+        let nparties = 3;
+        let set_size = 10;
+        let common_size = 5;
+        test_protocol_mt_base_crossbeam(nparties, set_size, common_size);
+    }
+
+    #[test]
+    fn test_protocol_mt_crossbeam_middle() {
+        let nparties = 5;
+        let set_size = 1 << 10;
+        let common_size = 1 << 5;
+        test_protocol_mt_base_crossbeam(nparties, set_size, common_size);
+    }
+
+    #[test]
+    fn test_protocol_mt_crossbeam_large() {
+        let nparties = 5;
+        let set_size = 1 << 20;
+        let common_size = 1 << 5;
+        test_protocol_mt_base_crossbeam(nparties, set_size, common_size);
     }
 }
