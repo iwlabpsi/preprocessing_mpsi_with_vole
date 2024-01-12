@@ -413,10 +413,11 @@ mod tests {
     use crate::set_utils::create_sets_without_check;
     use crate::solver::{PaxosSolver, Solver, SolverParams, VandelmondeSolver};
     use crate::vole::{
-        LPNVoleReceiver, LPNVoleSender, LPN_EXTEND_MEDIUM, LPN_EXTEND_SMALL, LPN_SETUP_MEDIUM,
-        LPN_SETUP_SMALL,
+        LPNVoleReceiver, LPNVoleSender, OtVoleReceiver, OtVoleSender, VoleShareForReceiver,
+        VoleShareForSender, LPN_EXTEND_MEDIUM, LPN_EXTEND_SMALL, LPN_SETUP_MEDIUM, LPN_SETUP_SMALL,
     };
     use num_traits::Zero;
+    use ocelot::ot::{AlszReceiver as OtReceiver, AlszSender as OtSender};
     use rand::Rng;
     use scuttlebutt::field::F128b;
     use scuttlebutt::AesRng;
@@ -436,9 +437,9 @@ mod tests {
         assert_eq!(sum, F128b::zero());
     }
 
-    fn test_protocol_base<S: Solver<F128b>>(nparties: usize, set_size: usize, common_size: usize) {
-        let mut rng = AesRng::new();
-
+    fn create_lpn_vole_sr<S: Solver<F128b>>(
+        set_size: usize,
+    ) -> (LPNVoleSender<F128b>, LPNVoleReceiver<F128b>) {
         let m_size = S::calc_params(set_size).code_length();
         let (setup_param, extend_param) = if m_size < (1 << 17) {
             println!("Small parameters are used.");
@@ -447,6 +448,24 @@ mod tests {
             println!("Medium parameters are used.");
             (LPN_SETUP_MEDIUM, LPN_EXTEND_MEDIUM)
         };
+        (
+            LPNVoleSender::new(setup_param, extend_param),
+            LPNVoleReceiver::new(setup_param, extend_param),
+        )
+    }
+
+    fn test_protocol_base<S, VS, VR>(
+        nparties: usize,
+        set_size: usize,
+        common_size: usize,
+        vole_share_for_s: VS,
+        vole_share_for_r: VR,
+    ) where
+        S: Solver<F128b>,
+        VS: VoleShareForSender<F128b> + 'static + Send,
+        VR: VoleShareForReceiver<F128b> + 'static + Send,
+    {
+        let mut rng = AesRng::new();
 
         let (intersection, mut sets): (Vec<F128b>, Vec<Vec<F128b>>) =
             create_sets_without_check(nparties, set_size, common_size, &mut rng).unwrap();
@@ -460,12 +479,12 @@ mod tests {
             // create and fork senders
             let pid = i + 1;
             let set = sets.pop().unwrap();
+            let vole_share_for_s = vole_share_for_s.clone();
+            let vole_share_for_r = vole_share_for_r.clone();
             std::thread::spawn(move || {
                 let mut rng = AesRng::new();
 
                 // offline phase
-                let vole_share_for_s = LPNVoleSender::new(setup_param, extend_param);
-                let vole_share_for_r = LPNVoleReceiver::new(setup_param, extend_param);
                 let sender = Sender::<F128b, S, _, _>::precomp(
                     pid,
                     &mut channels,
@@ -487,8 +506,8 @@ mod tests {
 
         // create and run receiver
         // offline phase
-        let vole_share_for_s = LPNVoleSender::new(setup_param, extend_param);
-        let vole_share_for_r = LPNVoleReceiver::new(setup_param, extend_param);
+        // let vole_share_for_s = vole_share_for_s.clone();
+        // let vole_share_for_r = vole_share_for_r.clone();
         let receiver = Receiver::<F128b, S, _, _>::precomp(
             &mut receiver_channels,
             &mut rng,
@@ -519,7 +538,15 @@ mod tests {
         let nparties = 3;
         let set_size = 10;
         let common_size = 5;
-        test_protocol_base::<VandelmondeSolver<F128b>>(nparties, set_size, common_size);
+        let (vole_share_for_s, vole_share_for_r) =
+            create_lpn_vole_sr::<VandelmondeSolver<F128b>>(set_size);
+        test_protocol_base::<VandelmondeSolver<F128b>, _, _>(
+            nparties,
+            set_size,
+            common_size,
+            vole_share_for_s,
+            vole_share_for_r,
+        );
     }
 
     #[test]
@@ -527,7 +554,15 @@ mod tests {
         let nparties = 3;
         let set_size = 10;
         let common_size = 5;
-        test_protocol_base::<PaxosSolver<F128b>>(nparties, set_size, common_size);
+        let (vole_share_for_s, vole_share_for_r) =
+            create_lpn_vole_sr::<PaxosSolver<F128b>>(set_size);
+        test_protocol_base::<PaxosSolver<F128b>, _, _>(
+            nparties,
+            set_size,
+            common_size,
+            vole_share_for_s,
+            vole_share_for_r,
+        );
     }
 
     #[test]
@@ -535,7 +570,15 @@ mod tests {
         let nparties = 5;
         let set_size = 1 << 10;
         let common_size = 1 << 5;
-        test_protocol_base::<PaxosSolver<F128b>>(nparties, set_size, common_size);
+        let (vole_share_for_s, vole_share_for_r) =
+            create_lpn_vole_sr::<PaxosSolver<F128b>>(set_size);
+        test_protocol_base::<PaxosSolver<F128b>, _, _>(
+            nparties,
+            set_size,
+            common_size,
+            vole_share_for_s,
+            vole_share_for_r,
+        );
     }
 
     #[test]
@@ -543,6 +586,62 @@ mod tests {
         let nparties = 5;
         let set_size = 1 << 20;
         let common_size = 1 << 5;
-        test_protocol_base::<PaxosSolver<F128b>>(nparties, set_size, common_size);
+        let (vole_share_for_s, vole_share_for_r) =
+            create_lpn_vole_sr::<PaxosSolver<F128b>>(set_size);
+        test_protocol_base::<PaxosSolver<F128b>, _, _>(
+            nparties,
+            set_size,
+            common_size,
+            vole_share_for_s,
+            vole_share_for_r,
+        );
+    }
+
+    #[test]
+    fn test_protocol_paxos_small_with_ot() {
+        let nparties = 3;
+        let set_size = 10;
+        let common_size = 5;
+        let vole_share_for_s = OtVoleSender::<F128b, 128, OtSender>::new();
+        let vole_share_for_r = OtVoleReceiver::<F128b, 128, OtReceiver>::new();
+        test_protocol_base::<PaxosSolver<F128b>, _, _>(
+            nparties,
+            set_size,
+            common_size,
+            vole_share_for_s,
+            vole_share_for_r,
+        );
+    }
+
+    #[test]
+    fn test_protocol_paxos_middle_with_ot() {
+        let nparties = 5;
+        let set_size = 1 << 10;
+        let common_size = 1 << 5;
+        let vole_share_for_s = OtVoleSender::<F128b, 128, OtSender>::new();
+        let vole_share_for_r = OtVoleReceiver::<F128b, 128, OtReceiver>::new();
+        test_protocol_base::<PaxosSolver<F128b>, _, _>(
+            nparties,
+            set_size,
+            common_size,
+            vole_share_for_s,
+            vole_share_for_r,
+        );
+    }
+
+    #[test]
+    fn test_protocol_paxos_large_with_ot() {
+        let nparties = 5;
+        let set_size = 1 << 20;
+        let common_size = 1 << 5;
+        let vole_share_for_s = OtVoleSender::<F128b, 128, OtSender>::new();
+        let vole_share_for_r = OtVoleReceiver::<F128b, 128, OtReceiver>::new();
+        test_protocol_base::<PaxosSolver<F128b>, _, _>(
+            nparties,
+            set_size,
+            common_size,
+            vole_share_for_s,
+            vole_share_for_r,
+        );
     }
 }
