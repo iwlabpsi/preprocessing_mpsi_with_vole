@@ -21,6 +21,7 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
+#[allow(unused)]
 fn kmprt_mt_routine<R, W>(
     mut sets: Vec<Arc<Vec<Block>>>,
     mut receiver_channels: Vec<(usize, Arc<Mutex<SyncChannel<R, W>>>)>,
@@ -57,6 +58,7 @@ where
     start.elapsed()
 }
 
+#[allow(unused)]
 pub(crate) fn kmprt_mt_unix_fn(
     nparties: usize,
     sets: Vec<Arc<Vec<Block>>>,
@@ -80,6 +82,7 @@ pub(crate) fn kmprt_mt_unix_fn(
     }
 }
 
+#[allow(unused)]
 pub(crate) fn kmprt_mt_tcp_fn(
     nparties: usize,
     sets: Vec<Arc<Vec<Block>>>,
@@ -124,6 +127,7 @@ pub(crate) fn kmprt_mt_tcp_fn(
     }
 }
 
+#[allow(unused)]
 fn preprocessed_mt_routine<R, W, F, S, VS, VR>(
     mut sets: Vec<Arc<Vec<F>>>,
     receiver_channels: Vec<(usize, Arc<Mutex<SyncChannel<R, W>>>)>,
@@ -167,6 +171,7 @@ where
     start.elapsed()
 }
 
+#[allow(unused)]
 fn create_parties_mt<F, S, VS, VR>(
     nparties: usize,
     set_size: usize,
@@ -225,6 +230,7 @@ where
     (receiver, senders)
 }
 
+#[allow(unused)]
 pub(crate) fn preprocessed_mt_unix_fn<F, S, VS, VR>(
     nparties: usize,
     sets: Vec<Arc<Vec<F>>>,
@@ -264,6 +270,7 @@ where
     }
 }
 
+#[allow(unused)]
 pub(crate) fn preprocessed_mt_tcp_fn<F, S, VS, VR>(
     nparties: usize,
     sets: Vec<Arc<Vec<F>>>,
@@ -316,6 +323,173 @@ where
 
                 total_time +=
                     preprocessed_mt_routine(sets, receiver_channels, channels, receiver, senders);
+            }
+
+            total_time
+        });
+    }
+}
+
+#[allow(unused)]
+fn preprocessed_mt_with_offline_routine<R, W, F, S, VS, VR>(
+    mut sets: Vec<Arc<Vec<F>>>,
+    mut receiver_channels: Vec<(usize, Arc<Mutex<SyncChannel<R, W>>>)>,
+    channels: Vec<Vec<(usize, Arc<Mutex<SyncChannel<R, W>>>)>>,
+    vole_share_for_s: VS,
+    vole_share_for_r: VR,
+) -> Duration
+where
+    R: Read + Send + 'static,
+    W: Write + Send + 'static,
+    F: FF,
+    S: Solver<F> + Send + 'static,
+    VS: VoleShareForSender<F> + Send + 'static,
+    VR: VoleShareForReceiver<F> + Send + 'static,
+    Standard: Distribution<F>,
+{
+    let recv_set = sets.pop().unwrap();
+    let mut rngs = vec![AesRng::new(); channels.len()];
+    let mut rng = AesRng::new();
+
+    let mut handles = Vec::new();
+    for (i, mut channels) in channels.into_iter().enumerate() {
+        let me = i + 1;
+        let set = sets.pop().unwrap();
+        let mut rng = rngs.pop().unwrap();
+        let pid = me;
+
+        let vole_share_for_s = vole_share_for_s.clone();
+        let vole_share_for_r = vole_share_for_r.clone();
+        let handle = std::thread::spawn(move || {
+            // offline phase
+            let sender = SepSender::<F, S, _, _>::precomp_mt(
+                pid,
+                &mut channels,
+                &mut rng,
+                vole_share_for_s,
+                vole_share_for_r,
+                set.len(),
+            )
+            .unwrap();
+
+            // online phase
+            sender.send_mt(set, &channels, &mut rng).unwrap();
+        });
+        handles.push(handle);
+    }
+
+    let start = Instant::now();
+    let receiver = SepReceiver::<F, S, _, _>::precomp_mt(
+        &mut receiver_channels,
+        &mut rng,
+        vole_share_for_s,
+        vole_share_for_r,
+        recv_set.len(),
+    )
+    .unwrap();
+    let _res = receiver
+        .receive_mt(recv_set, &receiver_channels, &mut rng)
+        .unwrap();
+    for handle in handles {
+        handle.join().unwrap();
+    }
+    start.elapsed()
+}
+
+#[allow(unused)]
+pub(crate) fn preprocessed_mt_with_offline_unix_fn<F, S, VS, VR>(
+    nparties: usize,
+    sets: Vec<Arc<Vec<F>>>,
+    set_size: usize,
+    vole_share_for_s: VS,
+    vole_share_for_r: VR,
+) -> impl FnMut(&mut Bencher<'_>)
+where
+    F: FF + FromU128,
+    S: Solver<F> + Send + 'static,
+    VS: VoleShareForSender<F> + Send + 'static,
+    VR: VoleShareForReceiver<F> + Send + 'static,
+    Standard: Distribution<F>,
+{
+    move |b| {
+        b.iter_custom(|iter| {
+            let mut total_time = Duration::new(0, 0);
+
+            for _ in 0..iter {
+                let (receiver_channels, channels) = create_unix_channels(nparties).unwrap();
+                let (receiver_channels, channels) =
+                    ch_arcnize(receiver_channels, channels).unwrap();
+
+                let sets = sets.clone();
+
+                total_time += preprocessed_mt_with_offline_routine::<_, _, _, S, _, _>(
+                    sets,
+                    receiver_channels,
+                    channels,
+                    vole_share_for_s.clone(),
+                    vole_share_for_r.clone(),
+                );
+            }
+
+            total_time
+        });
+    }
+}
+
+#[allow(unused)]
+pub(crate) fn preprocessed_mt_with_offline_tcp_fn<F, S, VS, VR>(
+    nparties: usize,
+    sets: Vec<Arc<Vec<F>>>,
+    set_size: usize,
+    vole_share_for_s: VS,
+    vole_share_for_r: VR,
+    base_port_rc: Rc<RefCell<usize>>,
+) -> impl FnMut(&mut Bencher<'_>)
+where
+    F: FF + FromU128,
+    S: Solver<F> + Send + 'static,
+    VS: VoleShareForSender<F> + Send + 'static,
+    VR: VoleShareForReceiver<F> + Send + 'static,
+    Standard: Distribution<F>,
+{
+    move |b| {
+        let bport_rc = Rc::clone(&base_port_rc);
+
+        b.iter_custom(|iter| {
+            let mut total_time = Duration::new(0, 0);
+
+            for _ in 0..iter {
+                let base_port = {
+                    let mut base_port_mut = bport_rc.borrow_mut();
+                    let now = *base_port_mut;
+                    *base_port_mut += nparties;
+                    now
+                };
+                let handles = (1..nparties)
+                    .map(|me| {
+                        std::thread::spawn(move || {
+                            create_tcp_channels_for_sender(nparties, base_port, me)
+                        })
+                    })
+                    .collect::<Vec<_>>();
+                let receiver_channels =
+                    create_tcp_channels_for_receiver(nparties, base_port).unwrap();
+                let channels = handles
+                    .into_iter()
+                    .map(|h| h.join().unwrap().unwrap())
+                    .collect::<Vec<_>>();
+                let (receiver_channels, channels) =
+                    ch_arcnize(receiver_channels, channels).unwrap();
+
+                let sets = sets.clone();
+
+                total_time += preprocessed_mt_with_offline_routine::<_, _, _, S, _, _>(
+                    sets,
+                    receiver_channels,
+                    channels,
+                    vole_share_for_s.clone(),
+                    vole_share_for_r.clone(),
+                );
             }
 
             total_time

@@ -1,35 +1,17 @@
+use super::{VoleShareForReceiver, VoleShareForSender};
 use anyhow::{bail, Context, Error};
 use ocelot::svole::wykw::Receiver as SVoleReceiverStruct;
 use ocelot::svole::wykw::Sender as SVoleSenderStruct;
+pub use ocelot::svole::wykw::{
+    LpnParams, LPN_EXTEND_LARGE, LPN_EXTEND_MEDIUM, LPN_EXTEND_SMALL, LPN_SETUP_LARGE,
+    LPN_SETUP_MEDIUM, LPN_SETUP_SMALL,
+};
 use ocelot::svole::SVoleReceiver as _;
 use ocelot::svole::SVoleSender as _;
 use rand::{CryptoRng, Rng};
 use scuttlebutt::channel::AbstractChannel;
 use scuttlebutt::field::FiniteField as FF;
 use std::marker::PhantomData;
-
-pub use ocelot::svole::wykw::{
-    LpnParams, LPN_EXTEND_LARGE, LPN_EXTEND_MEDIUM, LPN_EXTEND_SMALL, LPN_SETUP_LARGE,
-    LPN_SETUP_MEDIUM, LPN_SETUP_SMALL,
-};
-
-pub trait VoleShareForSender<F: FF>: Clone + Copy {
-    fn receive<C: AbstractChannel, RNG: CryptoRng + Rng>(
-        &mut self,
-        channel: &mut C,
-        rng: &mut RNG,
-        m: usize,
-    ) -> Result<(F, Vec<F>), Error>;
-}
-
-pub trait VoleShareForReceiver<F: FF>: Clone + Copy {
-    fn receive<C: AbstractChannel, RNG: CryptoRng + Rng>(
-        &mut self,
-        channel: &mut C,
-        rng: &mut RNG,
-        m: usize,
-    ) -> Result<(Vec<F>, Vec<F>), Error>;
-}
 
 #[derive(Clone, Copy)]
 pub struct LPNVoleSender<F: FF> {
@@ -73,9 +55,9 @@ impl<F: FF> VoleShareForSender<F> for LPNVoleSender<F> {
             );
         }
 
-        let vec_b = out[..m].to_vec();
+        let b_vec = out[..m].to_vec();
 
-        Ok((vole.delta(), vec_b))
+        Ok((vole.delta(), b_vec))
     }
 }
 

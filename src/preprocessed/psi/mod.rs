@@ -22,6 +22,7 @@ where
     S: Solver<F>,
     VS: VoleShareForSender<F>,
     VR: VoleShareForReceiver<F>,
+    Standard: Distribution<F>,
 {
     id: PartyId,
     opprf_senders: Vec<(usize, SepOpprfSenderWithVole<F, S, VS>)>,
@@ -34,6 +35,7 @@ where
     S: Solver<F>,
     VS: VoleShareForSender<F>,
     VR: VoleShareForReceiver<F>,
+    Standard: Distribution<F>,
 {
     id: PartyId,
     party_for_zs: Party<F, S, VS, VR>,
@@ -125,6 +127,7 @@ where
     S: Solver<F>,
     VS: VoleShareForSender<F>,
     VR: VoleShareForReceiver<F>,
+    Standard: Distribution<F>,
 {
     party_for_zs: Party<F, S, VS, VR>,
     opprf_receivers_for_rc: Vec<(usize, SepOpprfReceiverWithVole<F, S, VR>)>,
@@ -357,6 +360,7 @@ where
     S: Solver<F>,
     VS: VoleShareForSender<F>,
     VR: VoleShareForReceiver<F>,
+    Standard: Distribution<F>,
 {
     fn clone(&self) -> Self {
         Self {
@@ -373,6 +377,7 @@ where
     S: Solver<F>,
     VS: VoleShareForSender<F>,
     VR: VoleShareForReceiver<F>,
+    Standard: Distribution<F>,
 {
     fn clone(&self) -> Self {
         Self {
@@ -389,6 +394,7 @@ where
     S: Solver<F>,
     VS: VoleShareForSender<F>,
     VR: VoleShareForReceiver<F>,
+    Standard: Distribution<F>,
 {
     fn clone(&self) -> Self {
         Self {

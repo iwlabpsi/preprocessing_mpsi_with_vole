@@ -5,7 +5,6 @@ use crate::preprocessed::oprf::{
 use crate::solver::Solver;
 use crate::vole::{VoleShareForReceiver, VoleShareForSender};
 use anyhow::{anyhow, Context, Error};
-use rand::distributions::{Distribution, Standard};
 use rand::{CryptoRng, Rng};
 use scuttlebutt::field::FiniteField as FF;
 use scuttlebutt::AbstractChannel;
@@ -42,8 +41,7 @@ where
     ) -> Result<Box<dyn Fn(Self::Input) -> Result<Self::Output, Error> + Send>, Error>
     where
         C: AbstractChannel,
-        RNG: CryptoRng + Rng,
-        Standard: Distribution<Self::Input>;
+        RNG: CryptoRng + Rng;
 
     // fn compute(&self, input: Self::Input) -> Result<Self::Output, Error>;
 }
@@ -69,8 +67,7 @@ where
     ) -> Result<Vec<(Self::Input, Self::Output)>, Error>
     where
         C: AbstractChannel,
-        RNG: CryptoRng + Rng,
-        Standard: Distribution<Self::Input>;
+        RNG: CryptoRng + Rng;
 }
 
 pub struct SepOpprfSenderWithVole<F, S, V>
@@ -129,7 +126,6 @@ where
     where
         C: AbstractChannel,
         RNG: CryptoRng + Rng,
-        Standard: Distribution<Self::Input>,
     {
         let fk = self
             .oprf_sender
@@ -233,7 +229,6 @@ where
     where
         C: AbstractChannel,
         RNG: CryptoRng + Rng,
-        Standard: Distribution<Self::Input>,
     {
         let Self {
             params,

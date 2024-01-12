@@ -1,5 +1,4 @@
 use anyhow::Error;
-use rand::distributions::{Distribution, Standard};
 use rand::{CryptoRng, Rng};
 use scuttlebutt::field::FiniteField;
 use scuttlebutt::AbstractChannel;
@@ -38,9 +37,7 @@ pub trait Solver<FF: FiniteField> {
         points: &[(FF, FF)],
         aux: Self::AuxInfo,
         params: Self::Params,
-    ) -> Result<Vec<FF>, Error>
-    where
-        Standard: Distribution<FF>;
+    ) -> Result<Vec<FF>, Error>;
 
     fn decode(p: &[FF], x: FF, aux: Self::AuxInfo, params: Self::Params) -> Result<FF, Error>;
 }

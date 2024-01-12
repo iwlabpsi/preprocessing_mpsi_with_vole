@@ -17,6 +17,7 @@ use std::io::{Read, Write};
 use std::rc::Rc;
 use std::time::{Duration, Instant};
 
+#[allow(unused)]
 fn kmprt_routine<R, W>(
     mut sets: Vec<Vec<Block>>,
     mut receiver_channels: Vec<(usize, SyncChannel<R, W>)>,
@@ -53,6 +54,7 @@ where
     start.elapsed()
 }
 
+#[allow(unused)]
 pub(crate) fn kmprt_unix_fn(nparties: usize) -> impl FnMut(&mut Bencher<'_>, &usize) {
     move |b, &size| {
         b.iter_custom(|iter| {
@@ -74,6 +76,7 @@ pub(crate) fn kmprt_unix_fn(nparties: usize) -> impl FnMut(&mut Bencher<'_>, &us
     }
 }
 
+#[allow(unused)]
 pub(crate) fn kmprt_tcp_fn(
     nparties: usize,
     base_port_rc: Rc<RefCell<usize>>,
@@ -118,6 +121,7 @@ pub(crate) fn kmprt_tcp_fn(
     }
 }
 
+#[allow(unused)]
 fn preprocessed_routine<R, W, F, S, VS, VR>(
     mut sets: Vec<Vec<F>>,
     mut receiver_channels: Vec<(usize, SyncChannel<R, W>)>,
@@ -161,6 +165,7 @@ where
     start.elapsed()
 }
 
+#[allow(unused)]
 fn create_parties<F, S, VS, VR>(
     nparties: usize,
     set_size: usize,
@@ -218,6 +223,7 @@ where
     (receiver, senders)
 }
 
+#[allow(unused)]
 pub(crate) fn preprocessed_unix_fn<F, S, VS, VR>(
     nparties: usize,
     vole_share_for_s: VS,
@@ -256,6 +262,7 @@ where
     }
 }
 
+#[allow(unused)]
 pub(crate) fn preprocessed_tcp_fn<F, S, VS, VR>(
     nparties: usize,
     vole_share_for_s: VS,

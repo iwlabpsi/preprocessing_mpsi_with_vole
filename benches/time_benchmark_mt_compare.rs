@@ -7,17 +7,19 @@ use preprocessing_mpsi_with_vole::set_utils::create_sets_random;
 use preprocessing_mpsi_with_vole::solver::Solver;
 use preprocessing_mpsi_with_vole::solver::{PaxosSolver, SolverParams};
 use preprocessing_mpsi_with_vole::vole::{
-    LPNVoleReceiver, LPNVoleSender, LPN_EXTEND_MEDIUM, LPN_EXTEND_SMALL, LPN_SETUP_MEDIUM,
-    LPN_SETUP_SMALL,
+    LPNVoleReceiver, LPNVoleSender, OtVoleReceiver, OtVoleSender, LPN_EXTEND_MEDIUM,
+    LPN_EXTEND_SMALL, LPN_SETUP_MEDIUM, LPN_SETUP_SMALL,
 };
 use scuttlebutt::field::F128b;
 use scuttlebutt::{AesRng, Block};
 use std::cell::RefCell;
 use std::rc::Rc;
 mod time_common_mt;
+use ocelot::ot::{AlszReceiver as OtReceiver, AlszSender as OtSender};
 use std::sync::Arc;
 use time_common_mt::{
     kmprt_mt_tcp_fn, kmprt_mt_unix_fn, preprocessed_mt_tcp_fn, preprocessed_mt_unix_fn,
+    preprocessed_mt_with_offline_tcp_fn, preprocessed_mt_with_offline_unix_fn,
 };
 
 fn bench_unix_mt_base(
@@ -67,6 +69,26 @@ fn bench_unix_mt_base(
                 size,
                 LPNVoleSender::new(setup_param, extend_param),
                 LPNVoleReceiver::new(setup_param, extend_param),
+            ),
+        );
+        group.bench_function(
+            BenchmarkId::new("Preprocessing_offLPN_Paxos_Multithread", size),
+            preprocessed_mt_with_offline_unix_fn::<F128b, PaxosSolver<F128b>, _, _>(
+                nparties,
+                sets_for_prep.clone(),
+                size,
+                LPNVoleSender::new(setup_param, extend_param),
+                LPNVoleReceiver::new(setup_param, extend_param),
+            ),
+        );
+        group.bench_function(
+            BenchmarkId::new("Preprocessing_offOT_Paxos_Multithread", size),
+            preprocessed_mt_with_offline_unix_fn::<F128b, PaxosSolver<F128b>, _, _>(
+                nparties,
+                sets_for_prep.clone(),
+                size,
+                OtVoleSender::<F128b, 128, OtSender>::new(),
+                OtVoleReceiver::<F128b, 128, OtReceiver>::new(),
             ),
         );
     }
@@ -131,18 +153,40 @@ fn bench_tcp_mt_base(
         group.throughput(Throughput::Elements(size as u64));
         let base_port_rc: Rc<RefCell<usize>> = Rc::new(RefCell::new(10000));
         group.bench_function(
-            BenchmarkId::new("KMPRT17 Multithread", size),
+            BenchmarkId::new("KMPRT17_Multithread", size),
             kmprt_mt_tcp_fn(nparties, sets_for_kmprt, base_port_rc),
         );
         let base_port_rc: Rc<RefCell<usize>> = Rc::new(RefCell::new(20000));
         group.bench_function(
-            BenchmarkId::new("Preprocessing_Paxos Multithread", size),
+            BenchmarkId::new("Preprocessing_Paxos_Multithread", size),
             preprocessed_mt_tcp_fn::<F128b, PaxosSolver<F128b>, _, _>(
                 nparties,
-                sets_for_prep,
+                sets_for_prep.clone(),
                 size,
                 LPNVoleSender::new(setup_param, extend_param),
                 LPNVoleReceiver::new(setup_param, extend_param),
+                base_port_rc.clone(),
+            ),
+        );
+        group.bench_function(
+            BenchmarkId::new("Preprocessing_offLPN_Paxos_Multithread", size),
+            preprocessed_mt_with_offline_tcp_fn::<F128b, PaxosSolver<F128b>, _, _>(
+                nparties,
+                sets_for_prep.clone(),
+                size,
+                LPNVoleSender::new(setup_param, extend_param),
+                LPNVoleReceiver::new(setup_param, extend_param),
+                base_port_rc.clone(),
+            ),
+        );
+        group.bench_function(
+            BenchmarkId::new("Preprocessing_offOT_Paxos_Multithread", size),
+            preprocessed_mt_with_offline_tcp_fn::<F128b, PaxosSolver<F128b>, _, _>(
+                nparties,
+                sets_for_prep,
+                size,
+                OtVoleSender::<F128b, 128, OtSender>::new(),
+                OtVoleReceiver::<F128b, 128, OtReceiver>::new(),
                 base_port_rc,
             ),
         );

@@ -4,7 +4,6 @@ use crate::solver::{Solver, SolverParams};
 use crate::vole::{VoleShareForReceiver, VoleShareForSender};
 use anyhow::{anyhow, bail, Context, Error};
 use ocelot::oprf::ObliviousPrf;
-use rand::distributions::{Distribution, Standard};
 use rand::{CryptoRng, Rng};
 use scuttlebutt::field::FiniteField as FF;
 use scuttlebutt::AbstractChannel;
@@ -55,8 +54,7 @@ where
     ) -> Result<Vec<(Self::Input, Self::Output)>, Error>
     where
         C: AbstractChannel,
-        RNG: CryptoRng + Rng,
-        Standard: Distribution<Self::Input>;
+        RNG: CryptoRng + Rng;
 }
 
 pub struct SepOprfSenderWithVole<F, S, V>
@@ -249,7 +247,6 @@ where
     where
         C: AbstractChannel,
         RNG: CryptoRng + Rng,
-        Standard: Distribution<Self::Input>,
     {
         let points = queries
             .iter()

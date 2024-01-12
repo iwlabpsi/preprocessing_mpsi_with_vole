@@ -50,7 +50,10 @@ fn calc_r_inner_product<F: FF>(x: F, vec_r: &[F], k3: u64, r_size: usize) -> F {
     sum
 }
 
-pub struct PaxosSolver<F: FF>(PhantomData<F>);
+pub struct PaxosSolver<F>(PhantomData<F>)
+where
+    F: FF,
+    Standard: Distribution<F>;
 
 // paramaters
 // n
@@ -84,14 +87,18 @@ impl SolverParams for PaxosSolverParams {
     }
 }
 
-impl<F: FF> Solver<F> for PaxosSolver<F> {
+impl<F> Solver<F> for PaxosSolver<F>
+where
+    F: FF,
+    Standard: Distribution<F>,
+{
     type AuxInfo = (u64, u64, u64);
     type Params = PaxosSolverParams;
 
     fn gen_aux<RNG: CryptoRng + Rng>(rng: &mut RNG) -> Result<Self::AuxInfo> {
-        let k1 = rng.gen();
-        let k2 = rng.gen();
-        let k3 = rng.gen();
+        let k1 = rng.gen::<u64>();
+        let k2 = rng.gen::<u64>();
+        let k3 = rng.gen::<u64>();
 
         Ok((k1, k2, k3))
     }
@@ -145,10 +152,7 @@ impl<F: FF> Solver<F> for PaxosSolver<F> {
         points: &[(F, F)],
         aux: (u64, u64, u64),
         params: Self::Params,
-    ) -> Result<Vec<F>>
-    where
-        Standard: Distribution<F>,
-    {
+    ) -> Result<Vec<F>> {
         // 1. Construct the Cuckoo graph $G_{h_1, h_2, X}$ for $X = \{x_1, \ldots, x_n\}$.
         let graph = construct_cuckoo_graph(points, aux, params);
 

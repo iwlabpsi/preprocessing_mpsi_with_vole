@@ -3,7 +3,7 @@ use criterion::Criterion;
 use criterion::Throughput;
 use criterion::{criterion_group, criterion_main};
 use preprocessing_mpsi_with_vole::solver::Solver;
-use preprocessing_mpsi_with_vole::solver::{PaxosSolver, SolverParams, VandelmondeSolver};
+use preprocessing_mpsi_with_vole::solver::{PaxosSolver, SolverParams, /* VandelmondeSolver */};
 use preprocessing_mpsi_with_vole::vole::{
     LPNVoleReceiver, LPNVoleSender, LPN_EXTEND_MEDIUM, LPN_EXTEND_SMALL, LPN_SETUP_MEDIUM,
     LPN_SETUP_SMALL,

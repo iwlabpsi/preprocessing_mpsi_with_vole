@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use super::*;
 use crate::set_utils::FromU128;
 use scuttlebutt::field::{F128b, FiniteField as FF};

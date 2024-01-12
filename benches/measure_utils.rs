@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use anyhow::{Context, Result};
 use itertools::Itertools;
 use scuttlebutt::SyncChannel;
