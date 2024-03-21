@@ -1,3 +1,29 @@
+//! # paramaters
+//! - n
+//! - d = log n or 1.01 * log n // 1.01 woule be a proper one for 1 + \epsilon
+//! - \lambda = 40 // this would be proper one for F128b or set size 2^20.
+//!
+//! ## DFS based
+//!
+//! - m = (2.01 * n) + (d + \lambda) // 2.01 woule be a proper one for 2 + \epsilon
+//! - d = log n
+//! - |L| = m' = 2.01 * n
+//! - |R| = d + \lambda
+//!
+//! ## 2-core based
+//!
+//! - m = (2.4n) + (d + \lambda)
+//! - d = 1.01 * log n
+//! - |L| = m' = 2.4n
+//! - |R| = d + \lambda
+//!
+//! This solver is DFS based one.
+//!
+//! So we use m = (2.01 * n) + (log n + 40)
+//!
+//! See the appendix B and figure 7 in full version of "PSI from PaXoS: Fast, Malicious Private Set Intersection"
+//! @ <https://eprint.iacr.org/2020/193>
+
 use super::*;
 use anyhow::{bail, Context, Result};
 use gaussian_eliminations::gaussian_elimination;
@@ -54,26 +80,6 @@ pub struct PaxosSolver<F>(PhantomData<F>)
 where
     F: FF,
     Standard: Distribution<F>;
-
-// paramaters
-// n
-// d = log n or 1.01 * log n // 1.01 woule be a proper one for 1 + \epsilon
-// \lambda = 40 // this would be proper one for F128b or set size 2^20.
-// DFS based:
-// m = (2.01 * n) + (d + \lambda) // 2.01 woule be a proper one for 2 + \epsilon
-// d = log n
-// |L| = m' = 2.01 * n
-// |R| = d + \lambda
-// 2-core based:
-// m = (2.4n) + (d + \lambda)
-// d = 1.01 * log n
-// |L| = m' = 2.4n
-// |R| = d + \lambda
-
-// This solver is DFS based one.
-// So we use m = (2.01 * n) + (log n + 40)
-// See the appendix B and figure 7 in full version of "PSI from PaXoS: Fast, Malicious Private Set Intersection"
-// @ https://eprint.iacr.org/2020/193
 
 #[derive(Clone, Copy)]
 pub struct PaxosSolverParams {

@@ -12,7 +12,11 @@ type Channel = (
     SyncChannel<BufReader<TcpStream>, BufWriter<TcpStream>>,
 );
 
-fn create_tcp_channels(nparties: usize, base_port: usize, me: usize) -> Result<Vec<Channel>> {
+fn create_tcp_channel_for_party(
+    nparties: usize,
+    base_port: usize,
+    me: usize,
+) -> Result<Vec<Channel>> {
     let addr = SocketAddr::from(([127, 0, 0, 1], (base_port + me) as _));
     let listener = TcpListener::bind(addr)
         .with_context(|| format!("me={} addr={} @{}:{}", me, addr, file!(), line!()))?;
@@ -81,15 +85,35 @@ pub fn create_tcp_channels_for_sender(
         bail!("me must be > 0 (now me = {})", 0);
     }
 
-    let res = create_tcp_channels(nparties, port, me)?;
+    let res = create_tcp_channel_for_party(nparties, port, me)?;
 
     Ok(res)
 }
 
 pub fn create_tcp_channels_for_receiver(nparties: usize, port: usize) -> Result<Vec<Channel>> {
-    let res = create_tcp_channels(nparties, port, 0)?;
+    let res = create_tcp_channel_for_party(nparties, port, 0)?;
 
     Ok(res)
+}
+
+pub fn create_tcp_channels(
+    nparties: usize,
+    port: usize,
+) -> Result<(Vec<Channel>, Vec<Vec<Channel>>)> {
+    let receiver_handle =
+        std::thread::spawn(move || create_tcp_channels_for_receiver(nparties, port));
+
+    let handles = (1..nparties)
+        .map(|me| std::thread::spawn(move || create_tcp_channel_for_party(nparties, port, me)))
+        .collect::<Vec<_>>();
+
+    let receiver_channels = receiver_handle.join().unwrap()?;
+    let channels = handles
+        .into_iter()
+        .map(|h| h.join().unwrap())
+        .collect::<Result<Vec<Vec<Channel>>>>()?;
+
+    Ok((receiver_channels, channels))
 }
 
 #[cfg(test)]

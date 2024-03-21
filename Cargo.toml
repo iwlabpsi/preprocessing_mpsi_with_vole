@@ -18,9 +18,18 @@ sha2 = "0.10.8"
 typenum = "1.17.0"
 crossbeam = "0.8.2"
 generic-array = "0.14.7"
+clap = { version = "4.5.2", features = [ "derive" ] }
 
 [dev-dependencies]
 criterion = "0.5.1"
+
+[[bin]]
+name = "kmprt"
+path = "src/kmprt17/main.rs"
+
+[[bin]]
+name = "prep_psi"
+path = "src/preprocessed/psi/main.rs"
 
 [[bench]]
 name = "time_benchmark"

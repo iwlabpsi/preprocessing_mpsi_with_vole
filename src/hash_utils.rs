@@ -3,7 +3,8 @@ use scuttlebutt::field::FiniteField as FF;
 use sha2::{Digest, Sha256};
 use typenum::marker_traits::Unsigned;
 
-// H: F x F -> F
+/// Hash Function s.t.
+/// H: F x F -> F
 #[inline]
 pub fn hash<F: FF>(x: F, y: F) -> Result<F> {
     let mut hasher = Sha256::new();
@@ -16,7 +17,8 @@ pub fn hash<F: FF>(x: F, y: F) -> Result<F> {
     Ok(F::from_bytes(byt).with_context(|| format!("@{}:{}", file!(), line!()))?)
 }
 
-// H^F: F -> F
+/// Hash Function s.t.
+/// H^F: F -> F
 #[inline]
 pub fn hash_f<F: FF>(x: F) -> Result<F> {
     let mut hasher = Sha256::new();

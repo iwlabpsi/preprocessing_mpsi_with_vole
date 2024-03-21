@@ -1,10 +1,10 @@
 use criterion::Bencher;
-use preprocessing_mpsi_with_vole::channel_utils::ch_arcnize;
+use preprocessing_mpsi_with_vole::channel_utils::ch_arcnize_all;
 use preprocessing_mpsi_with_vole::channel_utils::sync_channel::create_unix_channels;
 use preprocessing_mpsi_with_vole::channel_utils::tcp_channel::{
     create_tcp_channels_for_receiver, create_tcp_channels_for_sender,
 };
-use preprocessing_mpsi_with_vole::kmprt17_mt::{
+use preprocessing_mpsi_with_vole::kmprt17::mt::{
     MultiThreadReceiver as KmprtReceiver, MultiThreadSender as KmprtSender,
 };
 use preprocessing_mpsi_with_vole::preprocessed::psi::{
@@ -69,8 +69,7 @@ pub(crate) fn kmprt_mt_unix_fn(
 
             for _ in 0..iter {
                 let (receiver_channels, channels) = create_unix_channels(nparties).unwrap();
-                let (receiver_channels, channels) =
-                    ch_arcnize(receiver_channels, channels).unwrap();
+                let (receiver_channels, channels) = ch_arcnize_all(receiver_channels, channels);
                 let sets = sets.clone();
                 // let common = common.clone();
 
@@ -113,8 +112,7 @@ pub(crate) fn kmprt_mt_tcp_fn(
                     .into_iter()
                     .map(|h| h.join().unwrap().unwrap())
                     .collect::<Vec<_>>();
-                let (receiver_channels, channels) =
-                    ch_arcnize(receiver_channels, channels).unwrap();
+                let (receiver_channels, channels) = ch_arcnize_all(receiver_channels, channels);
 
                 let sets = sets.clone();
                 // let common = common.clone();
@@ -186,7 +184,7 @@ where
     Standard: Distribution<F>,
 {
     let (receiver_channels, channels) = create_unix_channels(nparties).unwrap();
-    let (mut receiver_channels, channels) = ch_arcnize(receiver_channels, channels).unwrap();
+    let (mut receiver_channels, channels) = ch_arcnize_all(receiver_channels, channels);
 
     let mut handles = Vec::with_capacity(nparties - 1);
     for (i, mut channels) in channels.into_iter().enumerate() {
@@ -254,8 +252,7 @@ where
 
             for _ in 0..iter {
                 let (receiver_channels, channels) = create_unix_channels(nparties).unwrap();
-                let (receiver_channels, channels) =
-                    ch_arcnize(receiver_channels, channels).unwrap();
+                let (receiver_channels, channels) = ch_arcnize_all(receiver_channels, channels);
 
                 let sets = sets.clone();
                 let receiver: SepReceiver<F, S, VS, VR> = receiver.clone();
@@ -314,8 +311,7 @@ where
                     .into_iter()
                     .map(|h| h.join().unwrap().unwrap())
                     .collect::<Vec<_>>();
-                let (receiver_channels, channels) =
-                    ch_arcnize(receiver_channels, channels).unwrap();
+                let (receiver_channels, channels) = ch_arcnize_all(receiver_channels, channels);
 
                 let sets = sets.clone();
                 let receiver: SepReceiver<F, S, VS, VR> = receiver.clone();
@@ -417,8 +413,7 @@ where
 
             for _ in 0..iter {
                 let (receiver_channels, channels) = create_unix_channels(nparties).unwrap();
-                let (receiver_channels, channels) =
-                    ch_arcnize(receiver_channels, channels).unwrap();
+                let (receiver_channels, channels) = ch_arcnize_all(receiver_channels, channels);
 
                 let sets = sets.clone();
 
@@ -478,8 +473,7 @@ where
                     .into_iter()
                     .map(|h| h.join().unwrap().unwrap())
                     .collect::<Vec<_>>();
-                let (receiver_channels, channels) =
-                    ch_arcnize(receiver_channels, channels).unwrap();
+                let (receiver_channels, channels) = ch_arcnize_all(receiver_channels, channels);
 
                 let sets = sets.clone();
 

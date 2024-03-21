@@ -59,13 +59,25 @@ where
     Ok(res)
 }
 
-pub fn ch_arcnize<C>(
+pub fn ch_arcnize<C>(channels: Vec<(usize, C)>) -> Vec<(usize, Arc<Mutex<C>>)>
+where
+    C: AbstractChannel,
+{
+    let channels = channels
+        .into_iter()
+        .map(|(i, c)| (i, Arc::new(Mutex::new(c))))
+        .collect::<Vec<_>>();
+
+    channels
+}
+
+pub fn ch_arcnize_all<C>(
     receiver_channels: Vec<(usize, C)>,
     channels: Vec<Vec<(usize, C)>>,
-) -> Result<(
+) -> (
     Vec<(usize, Arc<Mutex<C>>)>,
     Vec<Vec<(usize, Arc<Mutex<C>>)>>,
-)>
+)
 where
     C: AbstractChannel,
 {
@@ -82,7 +94,7 @@ where
         })
         .collect::<Vec<_>>();
 
-    Ok((receiver_channels, channels))
+    (receiver_channels, channels)
 }
 
 #[cfg(test)]

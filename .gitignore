@@ -3,3 +3,6 @@
 .vscode/
 *_debug.txt
 *_test.txt
+*.svg
+nohup.out
+perf.data*

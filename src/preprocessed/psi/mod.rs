@@ -10,7 +10,9 @@ use scuttlebutt::channel::AbstractChannel;
 use scuttlebutt::field::FiniteField as FF;
 use std::clone::Clone;
 
+mod bin;
 pub mod multithread_ver;
+pub use bin::run;
 
 // ref: https://github.com/GaloisInc/swanky/blob/master/popsicle/src/psi/kmprt.rs
 

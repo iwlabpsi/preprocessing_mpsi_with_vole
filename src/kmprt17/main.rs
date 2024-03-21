@@ -1,6 +1,6 @@
 use itertools::Itertools;
-use popsicle::kmprt::{Receiver, Sender};
 use preprocessing_mpsi_with_vole::channel_utils::sync_channel::create_unix_channels;
+use preprocessing_mpsi_with_vole::kmprt17::{Receiver, Sender};
 use rand::Rng;
 use scuttlebutt::{AesRng, Block};
 
