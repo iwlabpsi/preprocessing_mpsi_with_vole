@@ -83,30 +83,92 @@ impl Display for MultiThreadOptimization {
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
-pub struct Args {
+pub struct PrePSIArgs {
+    /// Number of participants in the protocol.
     #[arg(short = 'N', long, default_value_t = 3)]
     pub num_parties: usize,
 
+    /// Number of elements of the set that each participant has.
     #[arg(short = 'n', long, default_value_t = 10)]
     pub set_size: usize,
 
+    /// The size of the aggregate product of the sets that each party has.
     #[arg(short = 'm', long, default_value_t = 5)]
     pub common_size: usize,
 
+    /// VOLE Sharing Methods.
+    ///
+    /// lpn: Learning Parity with Noise assumption
+    ///
+    /// ot : Oblivious Transfer
     #[arg(short = 'v', long = "vole", default_value_t = VoleType::Lpn)]
     pub vole_type: VoleType,
 
+    /// Solver Methods.
+    ///
+    /// vandelmonde: Vandelmonde matrix inversion
+    ///
+    /// paxos      : PaXoS (probe-and-XOR of strings)
     #[arg(short = 's', long = "solver", default_value_t = SolverType::Paxos)]
     pub solver_type: SolverType,
 
+    /// Channel Types.
+    ///
+    /// unix     : Unix domain socket
+    ///
+    /// tcp      : TCP socket
+    ///
+    /// crossbeam: Native channel of Rust
     #[arg(short = 'c', long = "channel", default_value_t = ChannelType::Unix)]
     pub channel_type: ChannelType,
 
+    /// Port number for TCP channel.
     #[arg(short = 'p', long = "port", default_value_t = 10000)]
     pub port: usize,
 
+    /// Multi-thread optimization.
+    ///
+    /// Off doesn't mean single-threaded and at least as many threads are created as parties.
     #[arg(short = 't', long = "threads", default_value_t = MultiThreadOptimization::On)]
     pub multi_thread: MultiThreadOptimization,
+
+    /// Verbose mode. If specified, print the sets and the intersection.
+    #[arg(long = "verbose", default_value_t = false)]
+    pub verbose: bool,
+}
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+pub struct KmprtArgs {
+    /// Number of participants in the protocol.
+    #[arg(short = 'N', long, default_value_t = 3)]
+    pub num_parties: usize,
+
+    /// Number of elements of the set that each participant has.
+    #[arg(short = 'n', long, default_value_t = 10)]
+    pub set_size: usize,
+
+    /// The size of the aggregate product of the sets that each party has.
+    #[arg(short = 'm', long, default_value_t = 5)]
+    pub common_size: usize,
+
+    /// Channel Types.
+    ///
+    /// unix     : Unix domain socket
+    ///
+    /// tcp      : TCP socket
+    ///
+    /// crossbeam: Native channel of Rust
+    #[arg(short = 'c', long = "channel", default_value_t = ChannelType::Unix)]
+    pub channel_type: ChannelType,
+
+    /// Port number for TCP channel.
+    #[arg(short = 'p', long = "port", default_value_t = 10000)]
+    pub port: usize,
+
+    /// Verbose mode. If specified, print the sets and the intersection.
+    #[arg(long = "verbose", default_value_t = false)]
+    pub verbose: bool,
 }
 
 pub enum ChannelUnion {

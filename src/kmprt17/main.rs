@@ -1,37 +1,50 @@
+use clap::Parser;
 use itertools::Itertools;
-use preprocessing_mpsi_with_vole::channel_utils::sync_channel::create_unix_channels;
+use preprocessing_mpsi_with_vole::cli_utils::{create_channels, KmprtArgs};
 use preprocessing_mpsi_with_vole::kmprt17::{Receiver, Sender};
 use rand::Rng;
 use scuttlebutt::{AesRng, Block};
 
 fn main() {
-    protocol(5, 5, 2);
+    let args = KmprtArgs::parse();
+
+    protocol(args);
 }
 
-fn protocol(nparties: usize, set_size: usize, intersection_size: usize) {
+fn protocol(
+    KmprtArgs {
+        num_parties,
+        set_size,
+        common_size,
+        channel_type,
+        port,
+        verbose,
+    }: KmprtArgs,
+) {
     let mut rng = AesRng::new();
 
-    if intersection_size > set_size {
-        panic!("intersection_size > set_size");
+    if common_size > set_size {
+        panic!("common_size > set_size");
     }
 
-    let intersection = (0..intersection_size)
-        .map(|_| rng.gen::<Block>())
-        .collect_vec();
+    let intersection = (0..common_size).map(|_| rng.gen::<Block>()).collect_vec();
 
-    let sets = (0..nparties)
+    let sets = (0..num_parties)
         .map(|i| {
             let mut set = intersection.clone();
-            set.extend((intersection_size..set_size).map(|_| rng.gen::<Block>()));
+            set.extend((common_size..set_size).map(|_| rng.gen::<Block>()));
 
-            println!("sets[{}] = {:?}", i, set);
+            if verbose {
+                println!("sets[{}] = {:?}", i, set);
+            }
 
             set
         })
         .collect_vec();
 
     // create channels
-    let (mut receiver_channels, channels) = create_unix_channels(nparties).unwrap();
+    let (mut receiver_channels, channels) =
+        create_channels(channel_type, num_parties, port).unwrap();
 
     for (i, mut channels) in channels.into_iter().enumerate() {
         // create and fork senders
@@ -50,7 +63,9 @@ fn protocol(nparties: usize, set_size: usize, intersection_size: usize) {
         .receive(&sets[0], &mut receiver_channels, &mut rng)
         .unwrap();
 
-    println!("intersection = {:?}", res);
+    if verbose {
+        println!("intersection = {:?}", res);
+    }
 
     assert_eq!(res, intersection);
 }
