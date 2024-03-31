@@ -1,6 +1,6 @@
 use crate::channel_utils::ch_arcnize;
 use crate::cli_utils::{
-    self as cli, create_vole_sr, Args, ChannelUnion, MultiThreadOptimization, SolverType,
+    self as cli, create_vole_sr, ChannelUnion, MultiThreadOptimization, PrePSIArgs, SolverType,
     VoleShareForReceiverUnion, VoleShareForSenderUnion,
 };
 use crate::preprocessed::psi::{Receiver, Sender};
@@ -11,6 +11,7 @@ use scuttlebutt::field::F128b;
 use scuttlebutt::AesRng;
 use std::collections::HashSet;
 use std::sync::Arc;
+use std::time::Instant;
 
 fn intersection_prepare(
     rng: &mut AesRng,
@@ -36,8 +37,13 @@ fn protocol_base(
     solver_type: SolverType,
     vole_share_for_s: VoleShareForSenderUnion,
     vole_share_for_r: VoleShareForReceiverUnion,
+    verbose: bool,
 ) -> Result<()> {
     let r_set = sets.pop().unwrap();
+
+    if verbose {
+        println!("receiver's set: {:?}", r_set);
+    }
 
     let handles = channels
         .into_iter()
@@ -48,6 +54,11 @@ fn protocol_base(
             let set = sets.pop().unwrap();
             let vole_share_for_s = vole_share_for_s.clone();
             let vole_share_for_r = vole_share_for_r.clone();
+
+            if verbose {
+                println!("sender {}'s set: {:?}", pid, set);
+            }
+
             std::thread::spawn(move || -> Result<()> {
                 let mut rng = AesRng::new();
 
@@ -122,6 +133,9 @@ fn protocol_base(
 
     macro_rules! receiver_protocol {
         ( $chns:expr, $set:expr, $r:path, $receive:ident ) => {{
+            println!("offline phase started.");
+            let start = Instant::now();
+
             let mut chns = $chns;
 
             // create and run receiver
@@ -136,14 +150,17 @@ fn protocol_base(
             )
             .with_context(|| "Failed to create receiver.")?;
 
-            println!("receiver prepared.");
+            println!("receiver prepared. offline time: {:?}", start.elapsed());
+            println!("online phase started.");
+
+            let start = Instant::now();
 
             // online phase
             let res = receiver
                 .$receive($set, &mut chns, &mut rng)
                 .with_context(|| "Failed to run receiver.")?;
 
-            println!("receiver finished.");
+            println!("receiver finished. online time: {:?}", start.elapsed());
 
             res
         }};
@@ -187,6 +204,11 @@ fn protocol_base(
     let res: HashSet<F128b> = HashSet::from_iter(res);
     let intersection: HashSet<F128b> = HashSet::from_iter(intersection);
 
+    if verbose {
+        println!("intersection: {:?}", intersection);
+        println!("res: {:?}", res);
+    }
+
     assert_eq!(res, intersection);
 
     for handle in handles {
@@ -196,8 +218,8 @@ fn protocol_base(
     Ok(())
 }
 
-pub fn run(args: Args) -> Result<()> {
-    let Args {
+pub fn run(
+    PrePSIArgs {
         num_parties,
         set_size,
         common_size,
@@ -206,8 +228,9 @@ pub fn run(args: Args) -> Result<()> {
         channel_type,
         port,
         multi_thread,
-    } = args;
-
+        verbose,
+    }: PrePSIArgs,
+) -> Result<()> {
     let mut rng = AesRng::new();
 
     // create sets
@@ -239,6 +262,7 @@ pub fn run(args: Args) -> Result<()> {
         solver_type,
         vole_share_for_s,
         vole_share_for_r,
+        verbose,
     )?;
 
     Ok(())

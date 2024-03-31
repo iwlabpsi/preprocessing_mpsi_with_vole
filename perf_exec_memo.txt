@@ -1,0 +1,7 @@
+sudo -s
+echo -1 > /proc/sys/kernel/perf_event_paranoid
+sysctl -w kernel.kptr_restrict=0
+su (username)
+
+perf record -F 997 --call-graph dwarf,16384 -g ./target/release/prep_psi -N=5 -n=16384 -m=32 -c=unix
+flamegraph -o 2_14_unix.svg --perfdata perf.data
