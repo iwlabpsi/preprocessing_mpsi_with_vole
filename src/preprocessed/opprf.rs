@@ -10,21 +10,28 @@ use scuttlebutt::field::FiniteField as FF;
 use scuttlebutt::AbstractChannel;
 use std::clone::Clone;
 
+/// Trait indicating that OPPRF constraints are satisfied.
 pub trait ObliviousProgrammablePrf
 where
     Self: Sized,
 {
+    /// PPRF seed.
     type Seed;
+    /// PPRF input.
     type Input;
+    /// PPRF output.
     type Output;
 }
 
+/// Trait for Separated OPPRF Sender.
 pub trait SepOpprfSender: ObliviousProgrammablePrf
 where
     Self: Sized,
 {
+    /// Precomputation system. e.g. [OtVoleSender](crate::vole::OtVoleSender), [LPNVoleSender](crate::vole::LPNVoleSender), etc. These system will implement [VoleShareForSender] trait in this library.
     type PrecompSystem;
 
+    /// Precomputation for the sender. It runned in the offline phase.
     fn precomp<C: AbstractChannel, RNG: CryptoRng + Rng>(
         channel: &mut C,
         rng: &mut RNG,
@@ -32,6 +39,7 @@ where
         system: Self::PrecompSystem,
     ) -> Result<Self, Error>;
 
+    /// Main protocol for the sender. It runned in the online phase.
     fn send<C, RNG>(
         self,
         channel: &mut C,
@@ -46,12 +54,15 @@ where
     // fn compute(&self, input: Self::Input) -> Result<Self::Output, Error>;
 }
 
+/// Trait for Separated OPPRF Receiver.
 pub trait SepOpprfReceiver: ObliviousProgrammablePrf
 where
     Self: Sized,
 {
+    /// Precomputation system. e.g. [OtVoleSender](crate::vole::OtVoleSender), [LPNVoleSender](crate::vole::LPNVoleSender), etc. These system will implement [VoleShareForReceiver] trait in this library.
     type PrecompSystem;
 
+    /// Precomputation for the receiver. It runned in the offline phase.
     fn precomp<C: AbstractChannel, RNG: CryptoRng + Rng>(
         channel: &mut C,
         rng: &mut RNG,
@@ -59,6 +70,7 @@ where
         system: Self::PrecompSystem,
     ) -> Result<Self, Error>;
 
+    /// Main protocol for the receiver. It runned in the online phase.
     fn receive<C, RNG>(
         self,
         channel: &mut C,
@@ -70,6 +82,7 @@ where
         RNG: CryptoRng + Rng;
 }
 
+/// Actual implementation of Separated OPPRF sender using VOLE.
 pub struct SepOpprfSenderWithVole<F, S, V>
 where
     F: FF,
@@ -100,6 +113,7 @@ where
 {
     type PrecompSystem = V;
 
+    /// Actual implementation of precomputation for the sender, using Separated OPRF precomp protocol.
     fn precomp<C: AbstractChannel, RNG: CryptoRng + Rng>(
         channel: &mut C,
         rng: &mut RNG,
@@ -116,6 +130,7 @@ where
         })
     }
 
+    /// Actual implementation of send protocol, using Separated OPRF send protocol.
     fn send<C, RNG>(
         self,
         channel: &mut C,
@@ -176,6 +191,7 @@ where
     */
 }
 
+/// Actual implementation of Separated OPPRF receiver using VOLE.
 pub struct SepOpprfReceiverWithVole<F, S, V>
 where
     F: FF,
@@ -205,6 +221,7 @@ where
 {
     type PrecompSystem = V;
 
+    /// Actual implementation of precomputation for the receiver, using Separated OPRF precomp protocol.
     fn precomp<C: AbstractChannel, RNG: CryptoRng + Rng>(
         channel: &mut C,
         rng: &mut RNG,
@@ -220,6 +237,7 @@ where
         })
     }
 
+    /// Actual implementation of receive protocol, using Separated OPRF receive protocol.
     fn receive<C, RNG>(
         self,
         channel: &mut C,
@@ -258,9 +276,9 @@ where
     }
 }
 
-// You are allowed to clone them FOR BENCHMARKING PURPOSES ONLY.
-// DO NOT USE THEM IN PRODUCTION because of the security reasons.
-
+/// You are allowed to clone them **FOR BENCHMARKING PURPOSES ONLY**.
+///
+/// **DO NOT USE THEM IN PRODUCTION** because of the security reasons.
 impl<F, S, V> Clone for SepOpprfSenderWithVole<F, S, V>
 where
     F: FF,
@@ -276,6 +294,9 @@ where
     }
 }
 
+/// You are allowed to clone them **FOR BENCHMARKING PURPOSES ONLY**.
+///
+/// **DO NOT USE THEM IN PRODUCTION** because of the security reasons.
 impl<F, S, V> Clone for SepOpprfReceiverWithVole<F, S, V>
 where
     F: FF,

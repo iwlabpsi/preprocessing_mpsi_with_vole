@@ -1,3 +1,5 @@
+//! based on: <https://github.com/GaloisInc/swanky/blob/master/popsicle/src/psi/kmprt.rs>
+
 use crate::preprocessed::opprf::{
     SepOpprfReceiver, SepOpprfReceiverWithVole, SepOpprfSender, SepOpprfSenderWithVole,
 };
@@ -11,11 +13,10 @@ use scuttlebutt::field::FiniteField as FF;
 use std::clone::Clone;
 
 mod bin;
-pub mod multithread_ver;
+mod multithread_ver;
 pub use bin::run;
 
-// ref: https://github.com/GaloisInc/swanky/blob/master/popsicle/src/psi/kmprt.rs
-
+/// usize is used as a party ID. Receiver's ID is always 0.
 pub type PartyId = usize;
 
 struct Party<F, S, VS, VR>
@@ -31,6 +32,15 @@ where
     opprf_receivers: Vec<(usize, SepOpprfReceiverWithVole<F, S, VR>)>,
 }
 
+/// A kind of party in the protocol. They play sender and receiver in Conditional Zero Sharing, and play sender in Conditional Reconstruction.
+///
+/// `*_mt` means multi-threads optimization.
+///
+/// Not optimized version doesn't mean single-threaded version. The difference between the optimized version and the not one is that in where parties exchange messages.
+///
+/// In the optimized version, each party has a separate thread to communicate with each of the other parties.
+///
+/// On the other hand, in the not optimized version, each party communicates in the same thread with all the other parties.
 pub struct Sender<F, S, VS, VR>
 where
     F: FF,
@@ -52,10 +62,12 @@ where
     VR: VoleShareForReceiver<F>,
     Standard: Distribution<F>,
 {
+    /// Get the party ID. Receiver is always 0.
     pub fn get_id(&self) -> PartyId {
         self.id
     }
 
+    /// Precomputation for the sender. It runned in the offline phase.
     pub fn precomp<C: AbstractChannel, RNG: Rng + CryptoRng>(
         me: PartyId,
         channels: &mut [(PartyId, C)],
@@ -91,6 +103,8 @@ where
         })
     }
 
+    /// Send protocol which consists of conditional secret sharing and conditional reconstruction sending.
+    /// It runned in the online phase.
     pub fn send<C: AbstractChannel, RNG: CryptoRng + Rng>(
         self,
         inputs: &[F],
@@ -123,6 +137,15 @@ where
     }
 }
 
+/// A kind of party in the protocol. They play sender and receiver in Conditional Zero Sharing, and play receiver in Conditional Reconstruction.
+///
+/// `*_mt` means multi-threads optimization.
+///
+/// Not optimized version doesn't mean single-threaded version. The difference between the optimized version and the not one is that in where parties exchange messages.
+///
+/// In the optimized version, each party has a separate thread to communicate with each of the other parties.
+///
+/// On the other hand, in the not optimized version, each party communicates in the same thread with all the other parties.
 pub struct Receiver<F, S, VS, VR>
 where
     F: FF,
@@ -143,10 +166,12 @@ where
     VR: VoleShareForReceiver<F>,
     Standard: Distribution<F>,
 {
+    /// Get the party ID. Receiver is always 0.
     pub fn get_id(&self) -> PartyId {
         0
     }
 
+    /// Precomputation for the receiver. It runned in the offline phase.
     pub fn precomp<C: AbstractChannel, RNG: CryptoRng + Rng>(
         channels: &mut [(PartyId, C)],
         rng: &mut RNG,
@@ -180,6 +205,8 @@ where
         })
     }
 
+    /// Receive protocol which consists of conditional secret sharing and conditional reconstruction receiving.
+    /// It runned in the online phase.
     pub fn receive<C: AbstractChannel, RNG: CryptoRng + Rng>(
         self,
         inputs: &[F],
@@ -354,8 +381,9 @@ where
     shares
 }
 
-// You are allowed to clone them FOR BENCHMARKING PURPOSES ONLY.
-// DO NOT USE THEM IN PRODUCTION because of the security reasons.
+/// You are allowed to clone them **FOR BENCHMARKING PURPOSES ONLY**.
+///
+/// **DO NOT USE THEM IN PRODUCTION** because of the security reasons.
 impl<F, S, VS, VR> Clone for Party<F, S, VS, VR>
 where
     F: FF,
@@ -373,6 +401,9 @@ where
     }
 }
 
+/// You are allowed to clone them **FOR BENCHMARKING PURPOSES ONLY**.
+///
+/// **DO NOT USE THEM IN PRODUCTION** because of the security reasons.
 impl<F, S, VS, VR> Clone for Sender<F, S, VS, VR>
 where
     F: FF,
@@ -390,6 +421,9 @@ where
     }
 }
 
+/// You are allowed to clone them **FOR BENCHMARKING PURPOSES ONLY**.
+///
+/// **DO NOT USE THEM IN PRODUCTION** because of the security reasons.
 impl<F, S, VS, VR> Clone for Receiver<F, S, VS, VR>
 where
     F: FF,

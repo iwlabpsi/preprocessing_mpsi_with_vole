@@ -1,3 +1,6 @@
+//! Module about unix domain socket channel. See [UnixStream].
+//! This module provides a function to create a set of unix domain socket channels for receiver and senders.
+
 use anyhow::{Context, Result};
 use itertools::Itertools;
 use scuttlebutt::SyncChannel;
@@ -11,6 +14,9 @@ type Channel = (
     SyncChannel<BufReader<UnixStream>, BufWriter<UnixStream>>,
 );
 
+/// Create a set of unix domain socket channels. See [UnixStream].
+///
+/// Return a tuple of two vectors of channels. The first vector contains the receiver channels, and the second vector contains the sender channels.
 pub fn create_unix_channels(nparties: usize) -> Result<(Vec<Channel>, Vec<Vec<Channel>>)> {
     let mut channels = (0..nparties)
         .map(|_| (0..nparties).map(|_| None).collect_vec())

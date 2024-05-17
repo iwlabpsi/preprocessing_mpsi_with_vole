@@ -1,3 +1,5 @@
+//! Utility functions for creating sets for the set intersection protocol.
+
 use anyhow::{bail, Result};
 use rand::distributions::{Distribution, Standard};
 use rand::seq::SliceRandom;
@@ -7,7 +9,9 @@ use scuttlebutt::serialization::CanonicalSerialize;
 use scuttlebutt::Block;
 use std::collections::HashSet;
 
+/// Trait for converting u128 to a type.
 pub trait FromU128 {
+    /// Convert u128 to a type.
     fn from_u128(x: u128) -> Self;
 }
 
@@ -24,6 +28,7 @@ impl FromU128 for Block {
     }
 }
 
+/// Create sets for the set intersection protocol with a check that intersection size is common_size.
 pub fn create_sets_with_check<T, RNG>(
     nparties: usize,
     set_size: usize,
@@ -94,6 +99,8 @@ where
     Ok((common, sets))
 }
 
+/// Create sets for the set intersection protocol without checks.
+/// It is useful to create big sets for performance testing.
 pub fn create_sets_without_check<T, RNG>(
     nparties: usize,
     set_size: usize,
@@ -157,6 +164,7 @@ where
     Ok((common, sets))
 }
 
+/// Create sets for the set intersection protocol so that intersection of sets is random size.
 pub fn create_sets_random<T, RNG>(
     nparties: usize,
     set_size: usize,

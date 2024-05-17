@@ -10,12 +10,15 @@ use scuttlebutt::AbstractChannel;
 use std::clone::Clone;
 use std::marker::PhantomData;
 
+/// Trait indicating that OPRF constraints are satisfied.
 pub trait SepOprfSender: ObliviousPrf
 where
     Self: Sized,
 {
+    /// Precomputation system. e.g. [OtVoleSender](crate::vole::OtVoleSender), [LPNVoleSender](crate::vole::LPNVoleSender), etc. These system will implement [VoleShareForSender] trait in this library.
     type PrecompSystem;
 
+    /// Precomputation for the sender. It runned in the offline phase.
     fn precomp<C: AbstractChannel, RNG: CryptoRng + Rng>(
         channel: &mut C,
         rng: &mut RNG,
@@ -23,6 +26,7 @@ where
         system: Self::PrecompSystem,
     ) -> Result<Self, Error>;
 
+    /// Main protocol for the sender. It runned in the online phase.
     fn send<C: AbstractChannel, RNG: CryptoRng + Rng>(
         self,
         channel: &mut C,
@@ -33,12 +37,15 @@ where
     // fn compute(&self, input: Self::Input) -> Result<Self::Output, Error>;
 }
 
+/// Trait for Separated OPRF Receiver.
 pub trait SepOprfReceiver: ObliviousPrf
 where
     Self: Sized,
 {
+    /// Precomputation system. e.g. [OtVoleSender](crate::vole::OtVoleSender), [LPNVoleSender](crate::vole::LPNVoleSender), etc. These system will implement [VoleShareForReceiver] trait in this library.
     type PrecompSystem;
 
+    /// Precomputation for the receiver. It runned in the offline phase.
     fn precomp<C: AbstractChannel, RNG: CryptoRng + Rng>(
         channel: &mut C,
         rng: &mut RNG,
@@ -46,6 +53,7 @@ where
         system: Self::PrecompSystem,
     ) -> Result<Self, Error>;
 
+    /// Main protocol for the receiver. It runned in the online phase.
     fn receive<C, RNG>(
         self,
         channel: &mut C,
@@ -57,6 +65,7 @@ where
         RNG: CryptoRng + Rng;
 }
 
+/// Actual implementation of Separated OPRF sender using VOLE.
 pub struct SepOprfSenderWithVole<F, S, V>
 where
     F: FF,
@@ -89,6 +98,7 @@ where
 {
     type PrecompSystem = V;
 
+    /// Actual implementation of precomputation for the sender. It called in offline phase and VOLE sharing is run.
     fn precomp<C: AbstractChannel, RNG: CryptoRng + Rng>(
         channel: &mut C,
         rng: &mut RNG,
@@ -121,6 +131,7 @@ where
         })
     }
 
+    /// Actual implementation of send protocol. It called in online phase and solver decoding is run.
     fn send<C: AbstractChannel, RNG: CryptoRng + Rng>(
         self,
         channel: &mut C,
@@ -175,6 +186,7 @@ where
     */
 }
 
+/// Actual implementation of Separated OPRF receiver using VOLE.
 pub struct SepOprfReceiverWithVole<F, S, V>
 where
     F: FF,
@@ -206,6 +218,7 @@ where
 {
     type PrecompSystem = V;
 
+    /// Actual implementation of precomputation for the receiver. It called in offline phase and VOLE sharing is run.
     fn precomp<C: AbstractChannel, RNG: CryptoRng + Rng>(
         channel: &mut C,
         rng: &mut RNG,
@@ -238,6 +251,7 @@ where
         })
     }
 
+    /// Actual implementation of receive protocol. It called in online phase and solver encoding (e.g. cukoo graph creating by PaXoS solver) is run.
     fn receive<C, RNG>(
         self,
         channel: &mut C,
@@ -303,9 +317,9 @@ where
     }
 }
 
-// You are allowed to clone them FOR BENCHMARKING PURPOSES ONLY.
-// DO NOT USE THEM IN PRODUCTION because of the security reasons.
-
+/// You are allowed to clone them **FOR BENCHMARKING PURPOSES ONLY**.
+///
+/// **DO NOT USE THEM IN PRODUCTION** because of the security reasons.
 impl<F, S, V> Clone for SepOprfSenderWithVole<F, S, V>
 where
     F: FF,
@@ -323,6 +337,9 @@ where
     }
 }
 
+/// You are allowed to clone them **FOR BENCHMARKING PURPOSES ONLY**.
+///
+/// **DO NOT USE THEM IN PRODUCTION** because of the security reasons.
 impl<F, S, V> Clone for SepOprfReceiverWithVole<F, S, V>
 where
     F: FF,

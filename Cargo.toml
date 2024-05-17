@@ -42,3 +42,9 @@ harness = false
 [[bench]]
 name = "time_benchmark_mt_compare"
 harness = false
+
+[package.metadata.docs.rs]
+rustdoc-args = [
+    "--html-in-header",
+    "katex.html",
+]

@@ -1,3 +1,8 @@
+//! CLI (CommandLine Interface) utilities for "Preprocessing MPSI" and "Kmprt".
+//!
+//! Here, you can know the options for the protocol through enum types and structs.
+//! See other modules for the actual implementation of the protocol or details of what options mean.
+
 use crate::channel_utils::sync_channel::create_unix_channels;
 use crate::channel_utils::sync_channel_by_cb::create_crossbeam_channels;
 use crate::channel_utils::sync_channel_by_cb::{CrossbeamReceiver, CrossbeamSender};
@@ -19,9 +24,12 @@ use std::{
     os::unix::net::UnixStream,
 };
 
+/// How to share VOLE (a kind of corelated randomness). More details: [vole](crate::vole).
 #[derive(Clone, Copy, ValueEnum, Debug)]
 pub enum VoleType {
+    /// Use Oblivious Transfer. See [OtVoleSender] or [OtVoleReceiver].
     Ot,
+    /// Use Learning Parity with Noise assumption. See [LPNVoleSender] or [LPNVoleReceiver].
     Lpn,
 }
 
@@ -34,9 +42,14 @@ impl Display for VoleType {
     }
 }
 
+/// Solver methods.
+/// Solver encodes points (one point consists of a member of set and corresponding value such that the hash of member)
+/// to vector (of something like coefficients) and decodes vector to points. More details: [solver](crate::solver).
 #[derive(Clone, Copy, ValueEnum, Debug)]
 pub enum SolverType {
+    /// Use polynomial interpolation to encode algorithm. See [VandelmondeSolver](crate::solver::VandelmondeSolver).
     Vandelmonde,
+    /// Use PaXoS (Probe-and-XOR of Strings) to encode algorithm. See [PaxosSolver](crate::solver::PaxosSolver).
     Paxos,
 }
 
@@ -49,10 +62,14 @@ impl Display for SolverType {
     }
 }
 
+/// Channel types. Channels are used to communicate between parties. More details: [channel_utils](crate::channel_utils).
 #[derive(Clone, Copy, ValueEnum, Debug)]
 pub enum ChannelType {
+    /// Unix domain socket. See [UnixStream].
     Unix,
+    /// TCP socket. See [TcpStream].
     Tcp,
+    /// Native channel of Rust. See [CrossbeamReceiver] and [CrossbeamSender].
     CrossBeam,
 }
 
@@ -66,9 +83,14 @@ impl Display for ChannelType {
     }
 }
 
+/// Multi-thread optimization.
+/// Off doesn’t mean single-threaded version. The difference between the optimized version and the not one is that in where parties exchange messages.
+/// More details: [psi::Receiver](crate::preprocessed::psi::Receiver) and [psi::Sender](crate::preprocessed::psi::Sender). `*_mt` functions are used in the optimized version.
 #[derive(Clone, Copy, ValueEnum, Debug)]
 pub enum MultiThreadOptimization {
+    /// On means that the optimized version is used.
     On,
+    /// Off means that the not optimized version is used.
     Off,
 }
 
@@ -81,6 +103,8 @@ impl Display for MultiThreadOptimization {
     }
 }
 
+/// Arguments for Preprocessing MPSI protocol.
+/// This struct implements [clap::Parser] to make that this binary has CommandLine Arguments.
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct PrePSIArgs {
@@ -108,7 +132,7 @@ pub struct PrePSIArgs {
     ///
     /// vandelmonde: Vandelmonde matrix inversion
     ///
-    /// paxos      : PaXoS (probe-and-XOR of strings)
+    /// paxos      : PaXoS (Probe-and-XOR of Strings)
     #[arg(short = 's', long = "solver", default_value_t = SolverType::Paxos)]
     pub solver_type: SolverType,
 
@@ -137,6 +161,8 @@ pub struct PrePSIArgs {
     pub verbose: bool,
 }
 
+/// Arguments for Kmprt protocol.
+/// This struct implements [clap::Parser] to make that this binary has CommandLine Arguments.
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct KmprtArgs {
@@ -171,9 +197,13 @@ pub struct KmprtArgs {
     pub verbose: bool,
 }
 
+/// Enum type to handle multiple channel types on runtime. Please ignore it :)
 pub enum ChannelUnion {
+    /// Unix domain socket. See [UnixStream].
     Unix(SyncChannel<BufReader<UnixStream>, BufWriter<UnixStream>>),
+    /// TCP socket. See [TcpStream].
     Tcp(SyncChannel<BufReader<TcpStream>, BufWriter<TcpStream>>),
+    /// Native channel of Rust. See [CrossbeamReceiver] and [CrossbeamSender].
     CrossBeam(SyncChannel<CrossbeamReceiver, CrossbeamSender>),
 }
 
@@ -233,13 +263,14 @@ macro_rules! make_union_channel {
     }};
 }
 
-type UCU = (usize, ChannelUnion);
+type Ucu = (usize, ChannelUnion);
 
+/// Create channels for the protocol. Runtime utility.
 pub fn create_channels(
     type_: ChannelType,
     nparties: usize,
     port: usize,
-) -> Result<(Vec<UCU>, Vec<Vec<UCU>>)> {
+) -> Result<(Vec<Ucu>, Vec<Vec<Ucu>>)> {
     match type_ {
         ChannelType::Unix => make_union_channel!(create_unix_channels(nparties)?, Unix),
         ChannelType::Tcp => make_union_channel!(create_tcp_channels(nparties, port)?, Tcp),
@@ -249,15 +280,21 @@ pub fn create_channels(
     }
 }
 
+/// Enum type to handle multiple vole share types for receivers on runtime. Please ignore it :)
 #[derive(Clone, Copy)]
 pub enum VoleShareForReceiverUnion {
+    /// Use Oblivious Transfer. See [OtVoleReceiver].
     Ot(OtVoleReceiver<F128b, 128, OtReceiver>),
+    /// Use Learning Parity with Noise assumption. See [LPNVoleReceiver].
     Lpn(LPNVoleReceiver<F128b>),
 }
 
+/// Enum type to handle multiple vole share types for senders on runtime. Please ignore it :)
 #[derive(Clone, Copy)]
 pub enum VoleShareForSenderUnion {
+    /// Use Oblivious Transfer. See [OtVoleSender].
     Ot(OtVoleSender<F128b, 128, OtSender>),
+    /// Use Learning Parity with Noise assumption. See [LPNVoleSender].
     Lpn(LPNVoleSender<F128b>),
 }
 
@@ -306,6 +343,7 @@ fn create_lpn_vole_sr<S: Solver<F128b>>(
     )
 }
 
+/// Create vole sender and receiver for the protocol. Runtime utility.
 pub fn create_vole_sr<S: Solver<F128b>>(
     vole_type: VoleType,
     set_size: usize,

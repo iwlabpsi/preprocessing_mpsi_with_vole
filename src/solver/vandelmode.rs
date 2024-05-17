@@ -1,3 +1,5 @@
+//! A kind of solver methods using polynomial interpolation.
+
 use super::*;
 use anyhow::Error;
 use rand::{CryptoRng, Rng};
@@ -5,8 +7,10 @@ use scuttlebutt::field::{polynomial::Polynomial, FiniteField};
 use scuttlebutt::AbstractChannel;
 use std::marker::PhantomData;
 
+/// Solver using polynomial interpolation.
 pub struct VandelmondeSolver<FF: FiniteField>(PhantomData<FF>);
 
+/// Parameters for VandelmondeSolver.
 #[derive(Clone, Copy)]
 pub struct VandelmondeSolverParams(usize);
 
@@ -43,6 +47,9 @@ impl<FF: FiniteField> Solver<FF> for VandelmondeSolver<FF> {
         VandelmondeSolverParams(n)
     }
 
+    /// Encode points to a code vector.
+    ///
+    /// This function take $`O(n^3)`$ where $`n`$ is set size.
     fn encode<RNG: CryptoRng + Rng>(
         _rng: &mut RNG,
         points: &[(FF, FF)],

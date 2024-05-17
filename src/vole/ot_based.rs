@@ -1,3 +1,7 @@
+//! OT (Oblivious Transfer) based VOLE implementaion.
+//!
+//! This OT based VOLE implementation is based on the following paper:
+//! [Faster Secure Comparisons with Offline Phase for Efficient Private Set Intersection](https://arxiv.org/abs/2209.13913)
 use super::{VoleShareForReceiver, VoleShareForSender};
 use crate::set_utils::FromU128;
 use anyhow::{Context, Error, Result};
@@ -18,6 +22,7 @@ fn bytes2block(bytes: &[u8]) -> Block {
     Block::from(b)
 }
 
+/// VOLE sender based on OT.
 pub struct OtVoleSender<F, const F_LENGTH: usize, OT>(PhantomData<(F, OT)>)
 where
     F: FF + FromU128 + CanonicalSerialize,
@@ -48,6 +53,7 @@ where
     OT: OtSender,
     Standard: Distribution<F>,
 {
+    /// Create new OT VOLE sender.
     pub fn new() -> Self {
         Self(PhantomData)
     }
@@ -98,6 +104,7 @@ where
     }
 }
 
+/// VOLE receiver based on OT.
 pub struct OtVoleReceiver<F, const F_LENGTH: usize, OT>(PhantomData<(F, OT)>)
 where
     F: FF + FromU128 + CanonicalSerialize,
@@ -129,6 +136,7 @@ where
     OT: OtReceiver,
     Standard: Distribution<F>,
 {
+    /// Create new OT VOLE receiver.
     pub fn new() -> Self {
         Self(PhantomData)
     }

@@ -1,3 +1,8 @@
+//! LPN (Learning Parity with Noise assumption) based VOLE implementation.
+//!
+//! This LPN based VOLE implementation is based on [ocelot::svole] module.
+//! The paper about this module:
+//! [Wolverine: Fast, Scalable, and Communication-Efficient Zero-Knowledge Proofs for Boolean and Arithmetic Circuits](https://eprint.iacr.org/2020/925)
 use super::{VoleShareForReceiver, VoleShareForSender};
 use anyhow::{bail, Context, Error};
 use ocelot::svole::wykw::Receiver as SVoleReceiverStruct;
@@ -13,6 +18,7 @@ use scuttlebutt::channel::AbstractChannel;
 use scuttlebutt::field::FiniteField as FF;
 use std::marker::PhantomData;
 
+/// VOLE sender based on LPN.
 #[derive(Clone, Copy)]
 pub struct LPNVoleSender<F: FF> {
     setup_param: LpnParams,
@@ -21,6 +27,7 @@ pub struct LPNVoleSender<F: FF> {
 }
 
 impl<F: FF> LPNVoleSender<F> {
+    /// Create new LPN VOLE sender.
     pub fn new(setup_param: LpnParams, extend_param: LpnParams) -> Self {
         Self {
             setup_param,
@@ -31,6 +38,11 @@ impl<F: FF> LPNVoleSender<F> {
 }
 
 impl<F: FF> VoleShareForSender<F> for LPNVoleSender<F> {
+    /// Receive $`\Delta \in \mathbb{F}, \bm{B} \in \mathbb{F}^m`$
+    ///
+    /// The inner algorithm in this function allows only three choices
+    /// for the length of the shared VOLE vector: small, medium, and large.
+    /// This parameter is given by `setup_param` and `extend_param` fields of [LPNVoleSender].
     fn receive<C: AbstractChannel, RNG: CryptoRng + Rng>(
         &mut self,
         channel: &mut C,
@@ -61,6 +73,7 @@ impl<F: FF> VoleShareForSender<F> for LPNVoleSender<F> {
     }
 }
 
+/// VOLE receiver based on LPN.
 #[derive(Clone, Copy)]
 pub struct LPNVoleReceiver<F: FF> {
     setup_param: LpnParams,
@@ -69,6 +82,7 @@ pub struct LPNVoleReceiver<F: FF> {
 }
 
 impl<F: FF> LPNVoleReceiver<F> {
+    /// Create new LPN VOLE receiver.
     pub fn new(setup_param: LpnParams, extend_param: LpnParams) -> Self {
         Self {
             setup_param,
@@ -79,6 +93,11 @@ impl<F: FF> LPNVoleReceiver<F> {
 }
 
 impl<F: FF> VoleShareForReceiver<F> for LPNVoleReceiver<F> {
+    /// Receive $`\bm{A}, \bm{C} \in \mathbb{F}^m`$
+    ///
+    /// The inner algorithm in this function allows only three choices
+    /// for the length of the shared VOLE vector: small, medium, and large.
+    /// This parameter is given by `setup_param` and `extend_param` fields of [LPNVoleReceiver].
     fn receive<C: AbstractChannel, RNG: CryptoRng + Rng>(
         &mut self,
         channel: &mut C,

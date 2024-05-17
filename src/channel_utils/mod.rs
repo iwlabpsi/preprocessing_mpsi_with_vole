@@ -1,3 +1,5 @@
+//! Channel utilities. Channels are used to communicate between parties.
+
 use anyhow::{Context, Result};
 use scuttlebutt::field::FiniteField as FF;
 use scuttlebutt::AbstractChannel;
@@ -8,6 +10,7 @@ pub mod sync_channel;
 pub mod sync_channel_by_cb;
 pub mod tcp_channel;
 
+/// Write a vector of field elements to a channel.
 pub fn write_vec_f<F, C>(channel: &mut C, v: &[F]) -> Result<usize>
 where
     F: FF,
@@ -35,6 +38,7 @@ where
     Ok(len)
 }
 
+/// Read a vector of field elements from a channel.
 pub fn read_vec_f<F, C>(channel: &mut C) -> Result<Vec<F>>
 where
     F: FF,
@@ -59,6 +63,7 @@ where
     Ok(res)
 }
 
+/// Wrap channels with Arc<Mutex<_>>.
 pub fn ch_arcnize<C>(channels: Vec<(usize, C)>) -> Vec<(usize, Arc<Mutex<C>>)>
 where
     C: AbstractChannel,
@@ -71,6 +76,7 @@ where
     channels
 }
 
+/// Wrap channels with Arc<Mutex<_>> for all parties.
 pub fn ch_arcnize_all<C>(
     receiver_channels: Vec<(usize, C)>,
     channels: Vec<Vec<(usize, C)>>,

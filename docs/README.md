@@ -9,7 +9,7 @@ This library only support Linux such as Ubuntu.
 Install [Rust](https://www.rust-lang.org/learn/get-started) and [clone this repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository?platform=linux), then run the following command in the cloned directory.
 
 ```bash
-$ cargo run --bin=prep_psi
+cargo run --bin=prep_psi
 ```
 
 See [for_ubuntu.md](for_ubuntu.md) for more details to install on Ubuntu OS.
@@ -26,13 +26,13 @@ You can also type `cargo run --bin=prep_psi -- --help` to see details of the opt
 | `--vole`        | `-v`  |  `lpn`  | VOLE Sharing Methods.                                                                                               |
 |                 |       |         | Possible Value: `lpn` (Learning Parity with Noise assumption) or `ot` (Oblivious Transfer)                          |
 | `--solver`      | `-s`  | `paxos` | Solver Methods.                                                                                                     |
-|                 |       |         | Possible Value: `vandelmonde` or `paxos` (PaXoS: probe-and-XOR of strings)                                          |
+|                 |       |         | Possible Value: `vandelmonde` or `paxos` (PaXoS: Probe-and-XOR of Strings)                                          |
 | `--channel`     | `-c`  | `unix`  | Channel Types.                                                                                                      |
 |                 |       |         | Possible Value: `unix` (Unix domain socket), `tcp`, `cross-beam` (Native channel of Rust)                           |
 | `--port`        | `-p`  |  10000  | Port number for TCP channel                                                                                         |
 | `--threads`     | `-t`  |  `on`   | Multi-thread optimization.                                                                                          |
 |                 |       |         | Possible Value: `on` or `off`. Off doesn't mean single-threaded and at least as many threads are created as parties |
-| `--verbose `    |       |         | Verbse mode. If specified, print the sets and the intersection.                                                          |
+| `--verbose `    |       |         | Verbse mode. If specified, print the sets and the intersection.                                                     |
 
 ## Benchmark
 
@@ -44,6 +44,35 @@ To measure, run a command like the following.
 cargo bench preprocessed_svole_poly_time
 ```
 
-On the command `cargo bench name` , `name` should be `benchmark_group` .
+On the command `cargo bench [name]` , `[name]` should be `benchmark_group` .
 
 Please read the [criterion documentation](https://bheisler.github.io/criterion.rs/book/index.html) for more information.
+
+## Documentation
+
+For more info: [preprocessing_mpsi_with_vole]()
+
+Or, you can build the document of this library by running follow script:
+
+```bash
+cargo doc
+```
+
+## Entry Point
+
+Entry points for CLI is written in following files.
+
+| Binary Name | File Path                                                     |
+| :---------- | :------------------------------------------------------------ |
+| prep_psi    | [src/preprocessed/psi/main.rs](/src/preprocessed/psi/main.rs) |
+| kmprt       | [src/kmprt17/main.rs](/src/kmprt17/main.rs)                   |
+
+## Key references
+
+FYI.
+
+- [swanky library](https://github.com/GaloisInc/swanky)
+- [前処理型多者間秘匿積集合プロトコル](https://iw-lab.jp/research/scis-oshiw24/)
+    - This paper is written in Japanese.
+- [PSI from PaXoS: Fast, Malicious Private Set Intersection](https://eprint.iacr.org/2020/193)
+- [VOLE-PSI: Fast OPRF and Circuit-PSI from Vector-OLE](https://eprint.iacr.org/2021/266)
