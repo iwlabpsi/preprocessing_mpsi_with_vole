@@ -50,7 +50,7 @@
 //! use rand::Rng;
 //! use scuttlebutt::AesRng;
 //! use preprocessing_mpsi_with_vole::solver::{Solver, PaxosSolver};
-//! # use anyhow::Result;
+//! use anyhow::Result;
 //! # fn try_main() -> Result<()> {
 //!
 //! let mut rng: AesRng = AesRng::new();
@@ -84,6 +84,10 @@
 //! #     try_main().unwrap();
 //! # }
 //! ```
+//!
+//! The usage is similar to that of the Vandelmonde solver.
+//!
+//! The Paxos solver uses the Paxos algorithm.
 
 use super::*;
 use anyhow::{bail, Context, Result};
@@ -138,6 +142,8 @@ fn calc_r_inner_product<F: FF>(x: F, vec_r: &[F], k3: u64, r_size: usize) -> F {
 }
 
 /// Solver for PaXoS algorithm.
+///
+/// Please look the parent document ( [crate::solver::paxos] ) for usage example.
 pub struct PaxosSolver<F>(PhantomData<F>)
 where
     F: FF,

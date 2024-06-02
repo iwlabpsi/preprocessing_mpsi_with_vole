@@ -1,3 +1,109 @@
+//! Oblivious Programmable Pseudo-Random Function (PRF) module.
+//!
+//! # Example
+//!
+//! Using OPPRF, you can share Programmable PRF between two parties.
+//! - Sender: Specifing (programming) points and getting PRF key.
+//! - Receiver: Getting Random values from PRF corresponding to receiver's query values.
+//!
+//! ```
+//! use preprocessing_mpsi_with_vole::channel_utils::{read_vec_f, write_vec_f};
+//! use preprocessing_mpsi_with_vole::preprocessed::opprf::{
+//!     SepOpprfReceiver, SepOpprfReceiverWithVole, SepOpprfSender, SepOpprfSenderWithVole,
+//! };
+//! use preprocessing_mpsi_with_vole::set_utils::FromU128;
+//! use preprocessing_mpsi_with_vole::solver::PaxosSolver;
+//! use preprocessing_mpsi_with_vole::vole::{
+//!     LPNVoleReceiver, LPNVoleSender, LPN_EXTEND_SMALL, LPN_SETUP_SMALL,
+//! };
+//! use scuttlebutt::{field::F128b, AesRng};
+//! use anyhow::Result;
+//! # use scuttlebutt::Channel;
+//! # use std::io::{BufReader, BufWriter};
+//! # use std::os::unix::net::UnixStream;
+//! # fn try_main() -> Result<()> {
+//!
+//! // Sender and Receiver are connected by channel.
+//! // See preprocessing_mpsi_with_vole::channel_utils.
+//!
+//! # let (sender, receiver) = UnixStream::pair().unwrap();
+//! let queries = (0_u128..10).map(F128b::from_u128).collect::<Vec<_>>();
+//! let queries_for_s = queries.clone();
+//! let queries_for_r = queries;
+//!
+//! let handle = std::thread::spawn(move || -> Result<()> {
+//!     // ...
+//!     // let mut channel = ...
+//!     let mut rng = AesRng::new();
+//! #     let reader = BufReader::new(sender.try_clone().unwrap());
+//! #     let writer = BufWriter::new(sender);
+//! #     let mut channel = Channel::new(reader, writer);
+//!     let vole_share_for_s = LPNVoleSender::new(LPN_SETUP_SMALL, LPN_EXTEND_SMALL);
+//!
+//!     // Offline phase
+//!     let opprf_sender = SepOpprfSenderWithVole::<F128b, PaxosSolver<F128b>, _>::precomp(
+//!         &mut channel,
+//!         &mut rng,
+//!         queries_for_s.len(),
+//!         vole_share_for_s,
+//!     )?;
+//!
+//!     let program = [
+//!         (F128b::from_u128(1), F128b::from_u128(111)),
+//!         (F128b::from_u128(5), F128b::from_u128(555)),
+//!         (F128b::from_u128(20), F128b::from_u128(222)),
+//!     ];
+//!
+//!     // Online phase
+//!     let fk = opprf_sender.send(&mut channel, &program, queries_for_s.len(), &mut rng)?;
+//!
+//!     let fk_set = queries_for_s
+//!         .iter()
+//!         .map(|&x| fk(x))
+//!         .collect::<Result<Vec<_>>>()?;
+//!
+//!     write_vec_f(&mut channel, &fk_set)?;
+//!
+//!     Ok(())
+//! });
+//! // ...
+//! // let mut channel = ...
+//! let mut rng = AesRng::new();
+//! # let reader = BufReader::new(receiver.try_clone().unwrap());
+//! # let writer = BufWriter::new(receiver);
+//! # let mut channel = Channel::new(reader, writer);
+//!
+//! let vole_share_for_r = LPNVoleReceiver::new(LPN_SETUP_SMALL, LPN_EXTEND_SMALL);
+//!
+//! let oprf_receiver = SepOpprfReceiverWithVole::<F128b, PaxosSolver<F128b>, _>::precomp(
+//!     &mut channel,
+//!     &mut rng,
+//!     queries_for_r.len(),
+//!     vole_share_for_r,
+//! )?;
+//!
+//! let received = oprf_receiver.receive(&mut channel, &queries_for_r, &mut rng)?;
+//!
+//! let receiver_res = received.into_iter().map(|(_, v)| v).collect::<Vec<_>>();
+//!
+//! let sender_res: Vec<F128b> = read_vec_f(&mut channel)?;
+//!
+//! handle.join().unwrap()?;
+//!
+//! assert_eq!(receiver_res, sender_res);
+//!
+//! assert_eq!(receiver_res[1], F128b::from_u128(111));
+//! assert_eq!(receiver_res[5], F128b::from_u128(555));
+//!
+//! assert_eq!(sender_res[1], F128b::from_u128(111));
+//! assert_eq!(sender_res[5], F128b::from_u128(555));
+//! # Ok(())
+//! # }
+//! # fn main() {
+//! #     try_main().unwrap();
+//! # }
+//! ```
+
 use crate::channel_utils::{read_vec_f, write_vec_f};
 use crate::preprocessed::oprf::{
     SepOprfReceiver, SepOprfReceiverWithVole, SepOprfSender, SepOprfSenderWithVole,
@@ -11,6 +117,8 @@ use scuttlebutt::AbstractChannel;
 use std::clone::Clone;
 
 /// Trait indicating that OPPRF constraints are satisfied.
+///
+/// Please look the parent document ( [crate::preprocessed::opprf] ) for usage example.
 pub trait ObliviousProgrammablePrf
 where
     Self: Sized,
@@ -24,6 +132,8 @@ where
 }
 
 /// Trait for Separated OPPRF Sender.
+///
+/// Please look the parent document ( [crate::preprocessed::opprf] ) for usage example.
 pub trait SepOpprfSender: ObliviousProgrammablePrf
 where
     Self: Sized,
@@ -55,6 +165,8 @@ where
 }
 
 /// Trait for Separated OPPRF Receiver.
+///
+/// Please look the parent document ( [crate::preprocessed::opprf] ) for usage example.
 pub trait SepOpprfReceiver: ObliviousProgrammablePrf
 where
     Self: Sized,
@@ -83,6 +195,8 @@ where
 }
 
 /// Actual implementation of Separated OPPRF sender using VOLE.
+///
+/// Please look the parent document ( [crate::preprocessed::opprf] ) for usage example.
 pub struct SepOpprfSenderWithVole<F, S, V>
 where
     F: FF,
@@ -192,6 +306,8 @@ where
 }
 
 /// Actual implementation of Separated OPPRF receiver using VOLE.
+///
+/// Please look the parent document ( [crate::preprocessed::opprf] ) for usage example.
 pub struct SepOpprfReceiverWithVole<F, S, V>
 where
     F: FF,

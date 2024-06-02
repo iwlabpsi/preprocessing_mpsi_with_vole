@@ -1,4 +1,52 @@
 //! A kind of solver methods using polynomial interpolation.
+//!
+//! # Example
+//!
+//! Here following code show encoding and decoding example. ()
+//!
+//! ```
+//! use scuttlebutt::field::F128b;
+//! use rand::Rng;
+//! use scuttlebutt::AesRng;
+//! use preprocessing_mpsi_with_vole::solver::{Solver, VandelmondeSolver};
+//! use anyhow::Result;
+//! # fn try_main() -> Result<()> {
+//!
+//! let mut rng: AesRng = AesRng::new();
+//! let set: Vec<F128b> = (0..5).map(|_| rng.gen()).collect();
+//!
+//! let aux = VandelmondeSolver::<F128b>::gen_aux(&mut rng)?;
+//! let params = VandelmondeSolver::<F128b>::calc_params(set.len());
+//!
+//! let points: Vec<(F128b, F128b)> = set
+//!     .iter()
+//!     .map(|x| (*x, *x * *x))
+//!     .collect();
+//!
+//! // Encoding points to vector.
+//! let p: Vec<F128b> = VandelmondeSolver::encode(&mut rng, &points, aux, params)?;
+//!
+//! // Vector p has the information correspondig value of each x is x * x.
+//!
+//! // Decoding vector to corresponding values.
+//! let decoded_values: Vec<F128b> = set
+//!     .iter()
+//!     .map(|x| VandelmondeSolver::decode(&p, *x, aux, params))
+//!     .collect::<Result<_>>()?;
+//!
+//! let values: Vec<F128b> = points.iter().map(|(_, y)| *y).collect();
+//!
+//! assert_eq!(values, decoded_values);
+//! # Ok(())
+//! # }
+//! # fn main() {
+//! #     try_main().unwrap();
+//! # }
+//! ```
+//!
+//! The usage is similar to that of the Paxos solver.
+//!
+//! The Vandelmonde solver uses a polynomial interpolation algorithm.
 
 use super::*;
 use anyhow::Error;
@@ -8,6 +56,8 @@ use scuttlebutt::AbstractChannel;
 use std::marker::PhantomData;
 
 /// Solver using polynomial interpolation.
+///
+/// Please look the parent document ( [crate::solver::vandelmonde] ) for usage example.
 pub struct VandelmondeSolver<FF: FiniteField>(PhantomData<FF>);
 
 /// Parameters for VandelmondeSolver.

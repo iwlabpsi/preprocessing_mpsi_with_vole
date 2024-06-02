@@ -106,7 +106,7 @@ impl Display for MultiThreadOptimization {
 /// Arguments for Preprocessing MPSI protocol.
 /// This struct implements [clap::Parser] to make that this binary has CommandLine Arguments.
 #[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
+#[command(version, about, long_about = None, next_line_help = true)]
 pub struct PrePSIArgs {
     /// Number of participants in the protocol.
     #[arg(short = 'N', long, default_value_t = 3)]
@@ -121,32 +121,20 @@ pub struct PrePSIArgs {
     pub common_size: usize,
 
     /// VOLE Sharing Methods.
-    ///
-    /// lpn: Learning Parity with Noise assumption
-    ///
-    /// ot : Oblivious Transfer
     #[arg(short = 'v', long = "vole", default_value_t = VoleType::Lpn)]
     pub vole_type: VoleType,
 
     /// Solver Methods.
-    ///
-    /// vandelmonde: Vandelmonde matrix inversion
-    ///
-    /// paxos      : PaXoS (Probe-and-XOR of Strings)
     #[arg(short = 's', long = "solver", default_value_t = SolverType::Paxos)]
     pub solver_type: SolverType,
 
     /// Channel Types.
-    ///
-    /// unix     : Unix domain socket
-    ///
-    /// tcp      : TCP socket
-    ///
-    /// crossbeam: Native channel of Rust
     #[arg(short = 'c', long = "channel", default_value_t = ChannelType::Unix)]
     pub channel_type: ChannelType,
 
     /// Port number for TCP channel.
+    ///
+    /// The port is used internally. No function to communicate externally is implemented. Sorry.
     #[arg(short = 'p', long = "port", default_value_t = 10000)]
     pub port: usize,
 
@@ -156,7 +144,9 @@ pub struct PrePSIArgs {
     #[arg(short = 't', long = "threads", default_value_t = MultiThreadOptimization::On)]
     pub multi_thread: MultiThreadOptimization,
 
-    /// Verbose mode. If specified, print the sets and the intersection.
+    /// Verbose mode.
+    ///
+    /// If specified, print the sets and the intersection.
     #[arg(long = "verbose", default_value_t = false)]
     pub verbose: bool,
 }
@@ -179,16 +169,12 @@ pub struct KmprtArgs {
     pub common_size: usize,
 
     /// Channel Types.
-    ///
-    /// unix     : Unix domain socket
-    ///
-    /// tcp      : TCP socket
-    ///
-    /// crossbeam: Native channel of Rust
     #[arg(short = 'c', long = "channel", default_value_t = ChannelType::Unix)]
     pub channel_type: ChannelType,
 
     /// Port number for TCP channel.
+    ///
+    /// The port is used internally. No function to communicate externally is implemented. Sorry.
     #[arg(short = 'p', long = "port", default_value_t = 10000)]
     pub port: usize,
 

@@ -1,4 +1,55 @@
 //! Channel utilities. Channels are used to communicate between parties.
+//!
+//! # Example
+//!
+//! Here, we show an example using channels. (Not much to do with this module.)
+//!
+//! ```
+//! use preprocessing_mpsi_with_vole::channel_utils::{write_vec_f, read_vec_f};
+//! use preprocessing_mpsi_with_vole::set_utils::FromU128;
+//! use scuttlebutt::{Channel, AbstractChannel};
+//! use scuttlebutt::field::F128b;
+//! use std::io::{BufReader, BufWriter};
+//! use std::os::unix::net::UnixStream;
+//! use anyhow::Result;
+//!
+//! # fn try_main() -> Result<()> {
+//! let (sender, receiver) = UnixStream::pair().unwrap();
+//!
+//! let handle = std::thread::spawn(move || -> Result<()> {
+//!     let reader = BufReader::new(sender.try_clone().unwrap());
+//!     let writer = BufWriter::new(sender);
+//!     let mut channel = Channel::new(reader, writer);
+//!
+//!     channel.write_u8(10)?;
+//!
+//!     let v: Vec<F128b> = (0_u128..10).map(F128b::from_u128).collect();
+//!     write_vec_f(&mut channel, &v)?;
+//!
+//!     Ok(())
+//! });
+//!
+//! let reader = BufReader::new(receiver.try_clone().unwrap());
+//! let writer = BufWriter::new(receiver);
+//! let mut channel = Channel::new(reader, writer);
+//!
+//! let n = channel.read_u8()?;
+//!
+//! assert_eq!(n, 10);
+//!
+//! let v: Vec<F128b> = read_vec_f(&mut channel)?;
+//!
+//! assert_eq!(v.len(), 10);
+//!
+//! handle.join().unwrap()?;
+//! # Ok(())
+//! # }
+//! # fn main() {
+//! #    try_main().unwrap();
+//! # }
+//! ```
+//!
+//! For more information, the document of [scuttlebutt::AbstractChannel] will help you.
 
 use anyhow::{Context, Result};
 use scuttlebutt::field::FiniteField as FF;
