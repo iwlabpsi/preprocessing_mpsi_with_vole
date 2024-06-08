@@ -54,7 +54,7 @@ cargo bench preprocessed_svole_poly_time
 
 ## ドキュメント
 
-ここに置いておきます: [preprocessing_mpsi_with_vole]()
+ここに置いておきます: [preprocessing_mpsi_with_vole](https://iwlabpsi.github.io/preprocessing_mpsi_with_vole/preprocessing_mpsi_with_vole/)
 
 または以下のコマンドを打つことで手元にドキュメントを作成できます。
 
