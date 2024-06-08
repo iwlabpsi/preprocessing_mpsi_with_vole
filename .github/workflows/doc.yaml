@@ -15,7 +15,6 @@ jobs:
         run: |
           cargo doc --no-deps
           RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --no-deps
-          echo "<head><meta http-equiv="Refresh" content="0; URL=preprocessing_mpsi_with_vole" /></head>" > target/doc/index.html
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
         with:
