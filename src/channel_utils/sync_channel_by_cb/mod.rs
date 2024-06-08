@@ -1,10 +1,17 @@
+//! Module about native channel of Rust. See [crossbeam].
+//! This module provides a function to create a set of crossbeam channels for a given number of parties (receiver and senders).
+
 use itertools::Itertools;
 use scuttlebutt::SyncChannel;
 pub mod crossbeam_wrapper;
-pub use crossbeam_wrapper::{cbch_pair, CrossbeamReceiver, CrossbeamSender};
+use crossbeam_wrapper::cbch_pair;
+pub use crossbeam_wrapper::{CrossbeamReceiver, CrossbeamSender};
 
 type Channel = (usize, SyncChannel<CrossbeamReceiver, CrossbeamSender>);
 
+/// Create a set of crossbeam channels.
+///
+/// Return a tuple of two vectors of channels. The first vector contains the receiver channels, and the second vector contains the sender channels.
 pub fn create_crossbeam_channels(nparties: usize) -> (Vec<Channel>, Vec<Vec<Channel>>) {
     let mut channels = (0..nparties)
         .map(|_| (0..nparties).map(|_| None).collect_vec())

@@ -1,7 +1,11 @@
+//! Crossbeam channel wrapper to use it in [scuttlebutt::SyncChannel].
+
 use crossbeam::channel::{unbounded, Receiver, RecvError, SendError, Sender};
 use std::io::{Error, ErrorKind, Read, Result, Write};
 
+/// Wrapper for [Sender] to implement [Write] trait.
 pub struct CrossbeamSender(Sender<Vec<u8>>);
+/// Wrapper for [Receiver] to implement [Read] trait.
 pub struct CrossbeamReceiver(Receiver<Vec<u8>>);
 
 impl Write for CrossbeamSender {
@@ -30,7 +34,7 @@ impl Read for CrossbeamReceiver {
     }
 }
 
-pub fn cbch_pair() -> (CrossbeamSender, CrossbeamReceiver) {
+pub(crate) fn cbch_pair() -> (CrossbeamSender, CrossbeamReceiver) {
     let (s, r) = unbounded();
     (CrossbeamSender(s), CrossbeamReceiver(r))
 }

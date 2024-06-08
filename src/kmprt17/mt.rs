@@ -1,3 +1,11 @@
+//! Multi-threaded implementation of KMPRT protocol.
+//!
+//! Not optimized version doesn't mean single-threaded version. The difference between the optimized version and the not one is that in where parties exchange messages.
+//!
+//! In the optimized version, each party has a separate thread to communicate with each of the other parties.
+//!
+//! On the other hand, in the not optimized version, each party communicates in the same thread with all the other parties.
+
 use anyhow::{Context, Result};
 use itertools::Itertools;
 use ocelot::oprf::{KmprtReceiver, KmprtSender};
@@ -5,6 +13,7 @@ use rand::Rng;
 use scuttlebutt::{AbstractChannel, AesRng, Block, Block512};
 use std::sync::{mpsc::channel, Arc, Mutex};
 
+/// usize is used as a party ID. Receiver's ID is always 0.
 pub type PartyId = usize;
 
 struct MultiThreadParty {
@@ -13,11 +22,14 @@ struct MultiThreadParty {
     opprf_receivers: Vec<(usize, Arc<Mutex<KmprtReceiver>>)>,
 }
 
+/// A kind of party in the protocol. They play sender and receiver in Conditional Zero Sharing, and play sender in Conditional Reconstruction.
 pub struct MultiThreadSender(MultiThreadParty);
 
+/// A kind of party in the protocol. They play sender and receiver in Conditional Zero Sharing, and play sender in Conditional Reconstruction.
 pub struct MultiThreadReceiver(MultiThreadParty);
 
 impl MultiThreadSender {
+    /// Initialize a sender party. It can be runned in the offline phase. (but this operation will be done immediately.)
     pub fn init<C>(
         me: PartyId,
         channels: &mut [(PartyId, Arc<Mutex<C>>)],
@@ -29,6 +41,8 @@ impl MultiThreadSender {
         MultiThreadParty::init(me, channels, rng).map(Self)
     }
 
+    /// Send protocol which consists of conditional secret sharing and conditional reconstruction sending.
+    /// It runned in the online phase.
     pub fn send<C>(
         &mut self,
         inputs: Arc<Vec<Block>>,
@@ -64,7 +78,9 @@ impl MultiThreadSender {
     }
 }
 
+/// A kind of party in the protocol. They play sender and receiver in Conditional Zero Sharing, and play receiver in Conditional Reconstruction.
 impl MultiThreadReceiver {
+    /// Initialize a receiver party. It can be runned in the offline phase. (but this operation will be done immediately.)
     pub fn init<C>(channels: &mut [(PartyId, Arc<Mutex<C>>)], rng: &mut AesRng) -> Result<Self>
     where
         C: AbstractChannel + Send + 'static,
@@ -72,6 +88,8 @@ impl MultiThreadReceiver {
         MultiThreadParty::init(0, channels, rng).map(Self)
     }
 
+    /// Receive protocol which consists of conditional secret sharing and conditional reconstruction receiving.
+    /// It runned in the online phase.
     pub fn receive<C>(
         &mut self,
         inputs: Arc<Vec<Block>>,
