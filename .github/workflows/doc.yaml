@@ -23,7 +23,6 @@ jobs:
 
   # Deployment job
   deploy:
-    needs: build
     permissions:
       pages: write
       id-token: write
