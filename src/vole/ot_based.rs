@@ -1,3 +1,85 @@
+//! OT (Oblivious Transfer) based VOLE implementaion.
+//!
+//! This OT based VOLE implementation is based on the following paper:
+//! [Faster Secure Comparisons with Offline Phase for Efficient Private Set Intersection](https://arxiv.org/abs/2209.13913)
+//!
+//! # Example
+//!
+//! ```
+//! # use anyhow::Context;
+//! # use preprocessing_mpsi_with_vole::channel_utils::{read_vec_f, write_vec_f};
+//! use preprocessing_mpsi_with_vole::vole::{VoleShareForReceiver, VoleShareForSender, OtVoleSender, OtVoleReceiver};
+//! use ocelot::ot::{AlszReceiver as OtReceiver, AlszSender as OtSender};
+//! use scuttlebutt::field::F128b;
+//! # use scuttlebutt::{Channel, AbstractChannel};
+//! use scuttlebutt::AesRng;
+//! # use std::io::{BufReader, BufWriter};
+//! # use std::os::unix::net::UnixStream;
+//! use anyhow::Result;
+//!
+//! # fn try_main() -> Result<()> {
+//! let vole_size = 100; // length of a_vec, b_vec and c_vec.
+//! # let (sender, receiver) = UnixStream::pair().unwrap();
+//!
+//! // Sender and Receiver are connected by channel.
+//! // See preprocessing_mpsi_with_vole::channel_utils.
+//!
+//! // At a thread.
+//! let handle = std::thread::spawn(move || -> Result<()> {
+//!     // ...
+//!     // let mut channel = ...
+//!     let mut rng = AesRng::new();
+//! #     let reader = BufReader::new(sender.try_clone().unwrap());
+//! #     let writer = BufWriter::new(sender);
+//! #     let mut channel = Channel::new(reader, writer);
+//!
+//!     let mut vole_sender = OtVoleSender::<F128b, 128, OtSender>::new();
+//!     let (delta, b_vec) = vole_sender
+//!         .receive(&mut channel, &mut rng, vole_size)?;
+//! #     channel
+//! #         .write_serializable(&delta)
+//! #         .with_context(|| format!("@{}:{}", file!(), line!()))
+//! #         .unwrap();
+//! #     write_vec_f(&mut channel, &b_vec)
+//! #         .with_context(|| format!("@{}:{}", file!(), line!()))
+//! #         .unwrap();
+//!     // ...
+//!     Ok(())
+//! });
+//!
+//! // At another thread.
+//! // ...
+//! // let mut channel = ...
+//! let mut rng = AesRng::new();
+//! # let reader = BufReader::new(receiver.try_clone().unwrap());
+//! # let writer = BufWriter::new(receiver);
+//! # let mut channel = Channel::new(reader, writer);
+//!
+//! let mut vole_receiver = OtVoleReceiver::<F128b, 128, OtReceiver>::new();
+//! let (a_vec, c_vec) = vole_receiver
+//!     .receive(&mut channel, &mut rng, vole_size)?;
+//! // ...
+//! # let delta: F128b = channel.read_serializable().unwrap();
+//! # let b_vec: Vec<F128b> = read_vec_f(&mut channel)
+//! #     .with_context(|| format!("@{}:{}", file!(), line!()))
+//! #     .unwrap();
+//! # handle.join().unwrap().unwrap();
+//!
+//! // satisfy c = delta * a + b
+//! for ((a, b), c) in a_vec
+//!     .into_iter()
+//!     .zip(b_vec.into_iter())
+//!     .zip(c_vec.into_iter())
+//! {
+//!     assert_eq!(delta * a + b, c);
+//! }
+//! # Ok(())
+//! # }
+//! # fn main() {
+//! #     try_main().unwrap();
+//! # }
+//! ```
+//!
 use super::{VoleShareForReceiver, VoleShareForSender};
 use crate::set_utils::FromU128;
 use anyhow::{Context, Error, Result};
@@ -18,6 +100,11 @@ fn bytes2block(bytes: &[u8]) -> Block {
     Block::from(b)
 }
 
+/// VOLE sender based on OT.
+///
+/// Please set the field `F_LENGTH` to the byte length of type `F`. e.g. `F_LENGTH = 128` for `F128b`.
+///
+/// Please look the parent document ( [crate::vole::ot_based] ) for usage example.
 pub struct OtVoleSender<F, const F_LENGTH: usize, OT>(PhantomData<(F, OT)>)
 where
     F: FF + FromU128 + CanonicalSerialize,
@@ -48,6 +135,7 @@ where
     OT: OtSender,
     Standard: Distribution<F>,
 {
+    /// Create new OT VOLE sender.
     pub fn new() -> Self {
         Self(PhantomData)
     }
@@ -98,6 +186,11 @@ where
     }
 }
 
+/// VOLE receiver based on OT.
+///
+/// Please set the field `F_LENGTH` to the byte length of type `F`. e.g. `F_LENGTH = 128` for `F128b`.
+///
+/// Please look the parent document ( [crate::vole::ot_based] ) for usage example.
 pub struct OtVoleReceiver<F, const F_LENGTH: usize, OT>(PhantomData<(F, OT)>)
 where
     F: FF + FromU128 + CanonicalSerialize,
@@ -129,6 +222,7 @@ where
     OT: OtReceiver,
     Standard: Distribution<F>,
 {
+    /// Create new OT VOLE receiver.
     pub fn new() -> Self {
         Self(PhantomData)
     }

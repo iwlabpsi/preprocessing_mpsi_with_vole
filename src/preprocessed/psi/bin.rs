@@ -218,6 +218,7 @@ fn protocol_base(
     Ok(())
 }
 
+/// Run the preprocessing mpsi.
 pub fn run(
     PrePSIArgs {
         num_parties,

@@ -12,8 +12,6 @@ use scuttlebutt::AesRng;
 use std::sync::mpsc::channel;
 use std::sync::{Arc, Mutex};
 
-// *_mt means multi-threads
-
 impl<F, S, VS, VR> Sender<F, S, VS, VR>
 where
     F: FF,
@@ -22,6 +20,7 @@ where
     VR: VoleShareForReceiver<F> + Send + 'static,
     Standard: Distribution<F>,
 {
+    /// Multi-threaded optimized version of precomp.
     pub fn precomp_mt<C>(
         me: PartyId,
         channels: &mut [(PartyId, Arc<Mutex<C>>)],
@@ -62,6 +61,7 @@ where
         })
     }
 
+    /// Multi-threaded optimized version of send.
     pub fn send_mt<C>(
         self,
         inputs: Arc<Vec<F>>,
@@ -110,6 +110,7 @@ where
     VR: VoleShareForReceiver<F> + Send + 'static,
     Standard: Distribution<F>,
 {
+    /// Multi-threaded optimized version of precomp.
     pub fn precomp_mt<C>(
         channels: &mut [(PartyId, Arc<Mutex<C>>)],
         rng: &mut AesRng,
@@ -169,6 +170,7 @@ where
         })
     }
 
+    /// Multi-threaded optimized version of receive.
     pub fn receive_mt<C>(
         self,
         inputs: Arc<Vec<F>>,
@@ -236,7 +238,7 @@ where
     VR: VoleShareForReceiver<F> + Send + 'static,
     Standard: Distribution<F>,
 {
-    pub fn precomp_mt<C>(
+    fn precomp_mt<C>(
         me: PartyId,
         channels: &mut [(PartyId, Arc<Mutex<C>>)],
         rng: &mut AesRng,

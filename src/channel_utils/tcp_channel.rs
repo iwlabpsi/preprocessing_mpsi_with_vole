@@ -1,3 +1,6 @@
+//! Module about tcp channel. See [TcpStream].
+//! This module provides a function to create a set of tcp stream channels for receiver and senders.
+
 use anyhow::{bail, Context, Result};
 use scuttlebutt::SyncChannel;
 use std::io::{BufReader, BufWriter, Read, Write};
@@ -76,6 +79,7 @@ fn create_tcp_channel_for_party(
     Ok(res)
 }
 
+/// Return a vector of channels for sender channel.
 pub fn create_tcp_channels_for_sender(
     nparties: usize,
     port: usize,
@@ -90,12 +94,16 @@ pub fn create_tcp_channels_for_sender(
     Ok(res)
 }
 
+/// Return a vector of channels for receiver channel.
 pub fn create_tcp_channels_for_receiver(nparties: usize, port: usize) -> Result<Vec<Channel>> {
     let res = create_tcp_channel_for_party(nparties, port, 0)?;
 
     Ok(res)
 }
 
+/// Create a set of tcp stream socket channels. See [TcpStream].
+///
+/// Return a tuple of two vectors of channels. The first vector contains the receiver channels, and the second vector contains the sender channels.
 pub fn create_tcp_channels(
     nparties: usize,
     port: usize,

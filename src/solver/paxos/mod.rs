@@ -1,28 +1,93 @@
-//! # paramaters
-//! - n
-//! - d = log n or 1.01 * log n // 1.01 woule be a proper one for 1 + \epsilon
-//! - \lambda = 40 // this would be proper one for F128b or set size 2^20.
+//! A kind of solver methods using [PaXoS](https://eprint.iacr.org/2020/193) (Probe-and-XOR of Strings) algorithm.
+//!
+//! Solver encodes points (one point consists of a member of set and corresponding value such that the hash of member)
+//! to vector (of something like coefficients) and decodes vector to points.
+//!
+//! # What is PaXoS algorithm?
+//!
+//! See following papers:
+//! - [前処理型多者間秘匿積集合プロトコル](https://iw-lab.jp/research/scis-oshiw24/)
+//!     - This paper is written in Japanese.
+//! - [PSI from PaXoS: Fast, Malicious Private Set Intersection](https://eprint.iacr.org/2020/193)
+//! - [VOLE-PSI: Fast OPRF and Circuit-PSI from Vector-OLE](https://eprint.iacr.org/2021/266)
+//!
+//! # Paramaters to understand PaXoS
+//!
+//! - $`n`$: the number of points (or elements in the set).
+//! - $`d = \log n \ \  \mathrm{or} \  \ d = 1.01 \cdot \log n`$
+//!     - $`1.01`$ woule be a proper one for $`1 + \epsilon`$
+//! - $`\lambda = 40`$
+//!     - this would be proper one for [F128b](scuttlebutt::field::F128b) or set size $`2^{20}`$.
 //!
 //! ## DFS based
 //!
-//! - m = (2.01 * n) + (d + \lambda) // 2.01 woule be a proper one for 2 + \epsilon
-//! - d = log n
-//! - |L| = m' = 2.01 * n
-//! - |R| = d + \lambda
+//! - $`m = (2.01 \cdot n) + (d + \lambda)`$
+//!     - $`2.01`$ woule be a proper one for $`2 + \epsilon`$
+//! - $`d = \log n`$
+//! - $`|L| = m' = 2.01 \cdot n`$
+//! - $`|R| = d + \lambda`$
 //!
 //! ## 2-core based
 //!
-//! - m = (2.4n) + (d + \lambda)
-//! - d = 1.01 * log n
-//! - |L| = m' = 2.4n
-//! - |R| = d + \lambda
+//! - $`m = (2.4n) + (d + \lambda)`$
+//! - $`d = 1.01 \cdot \log n`$
+//! - $`|L| = m' = 2.4n`$
+//! - $`|R| = d + \lambda`$
 //!
-//! This solver is DFS based one.
+//! ## In this implementation
 //!
-//! So we use m = (2.01 * n) + (log n + 40)
+//! This solver is DFS based one. So we use $`m = (2.01 \cdot n) + (\log n + 40)`$
 //!
 //! See the appendix B and figure 7 in full version of "PSI from PaXoS: Fast, Malicious Private Set Intersection"
 //! @ <https://eprint.iacr.org/2020/193>
+//!
+//! # Example
+//!
+//! Here following code show encoding and decoding example.
+//!
+//! ```
+//! use scuttlebutt::field::F128b;
+//! use rand::Rng;
+//! use scuttlebutt::AesRng;
+//! use preprocessing_mpsi_with_vole::solver::{Solver, PaxosSolver};
+//! use anyhow::Result;
+//! # fn try_main() -> Result<()> {
+//!
+//! let mut rng: AesRng = AesRng::new();
+//! let set: Vec<F128b> = (0..5).map(|_| rng.gen()).collect();
+//!
+//! let aux = PaxosSolver::<F128b>::gen_aux(&mut rng)?;
+//! let params = PaxosSolver::<F128b>::calc_params(set.len());
+//!
+//! let points: Vec<(F128b, F128b)> = set
+//!     .iter()
+//!     .map(|x| (*x, *x * *x))
+//!     .collect();
+//!
+//! // Encoding points to vector.
+//! let p: Vec<F128b> = PaxosSolver::encode(&mut rng, &points, aux, params)?;
+//!
+//! // Vector p has the information correspondig value of each x is x * x.
+//!
+//! // Decoding vector to corresponding values.
+//! let decoded_values: Vec<F128b> = set
+//!     .iter()
+//!     .map(|x| PaxosSolver::decode(&p, *x, aux, params))
+//!     .collect::<Result<_>>()?;
+//!
+//! let values: Vec<F128b> = points.iter().map(|(_, y)| *y).collect();
+//!
+//! assert_eq!(values, decoded_values);
+//! # Ok(())
+//! # }
+//! # fn main() {
+//! #     try_main().unwrap();
+//! # }
+//! ```
+//!
+//! The usage is similar to that of the Vandelmonde solver.
+//!
+//! The Paxos solver uses the Paxos algorithm.
 
 use super::*;
 use anyhow::{bail, Context, Result};
@@ -38,7 +103,7 @@ use std::rc::{Rc, Weak};
 
 // H_i: key x F -> [m]
 #[inline]
-pub fn hash2index<F: FF>(k: u64, x: F, max: usize) -> usize {
+fn hash2index<F: FF>(k: u64, x: F, max: usize) -> usize {
     let mut hasher = Sha256::new();
     hasher.update(k.to_be_bytes());
     hasher.update(x.to_bytes());
@@ -51,7 +116,7 @@ pub fn hash2index<F: FF>(k: u64, x: F, max: usize) -> usize {
 
 // r: key x F -> {0, 1}^r_size
 #[inline]
-pub fn r<F: FF>(k: u64, x: F, m: usize) -> Vec<bool> {
+fn r<F: FF>(k: u64, x: F, m: usize) -> Vec<bool> {
     let mut hasher = Sha256::new();
     hasher.update(k.to_be_bytes());
     hasher.update(x.to_bytes());
@@ -76,11 +141,15 @@ fn calc_r_inner_product<F: FF>(x: F, vec_r: &[F], k3: u64, r_size: usize) -> F {
     sum
 }
 
+/// Solver for PaXoS algorithm.
+///
+/// Please look the parent document ( [crate::solver::paxos] ) for usage example.
 pub struct PaxosSolver<F>(PhantomData<F>)
 where
     F: FF,
     Standard: Distribution<F>;
 
+/// Parameters for PaXoS solver. It contains $`|L|`$ and $`|R|`$.
 #[derive(Clone, Copy)]
 pub struct PaxosSolverParams {
     l_size: usize,
@@ -98,7 +167,9 @@ where
     F: FF,
     Standard: Distribution<F>,
 {
+    /// Keys for hash functions. Keys are generated randomly by [gen_aux](PaxosSolver::gen_aux).
     type AuxInfo = (u64, u64, u64);
+    /// PaxosSolver Parameters consists of $`|L|`$ and $`|R|`$.
     type Params = PaxosSolverParams;
 
     fn gen_aux<RNG: CryptoRng + Rng>(rng: &mut RNG) -> Result<Self::AuxInfo> {
@@ -153,6 +224,9 @@ where
         PaxosSolverParams { l_size, r_size }
     }
 
+    /// Encode points to a code vector.
+    ///
+    /// This function take $`O(n \lambda)`$ where $`n`$ is set size and $`\lambda`$ is the statistical security parameter.
     fn encode<RNG: CryptoRng + Rng>(
         rng: &mut RNG,
         points: &[(F, F)],
