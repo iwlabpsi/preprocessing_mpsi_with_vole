@@ -13,8 +13,9 @@ jobs:
         uses: actions/checkout@v4
       - name: Run cargo doc
         run: |
-          cargo doc --no-deps
+          cargo doc --no-deps -p preprocessing_mpsi_with_vole -p ocelot -p popsicle -p scuttlebutt
           RUSTDOCFLAGS="--html-in-header katex.html" cargo doc --no-deps
+          echo "<head><meta http-equiv="Refresh" content="0; URL=./preprocessing_mpsi_with_vole" /></head>" > target/doc/index.html
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
         with:
